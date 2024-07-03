@@ -1,0 +1,61 @@
+- name: grafana
+  hosts: all
+  become: yes  # Use sudo to execute tasks
+      
+  vars_files:
+    - defaults.yml
+
+  tasks:
+  - block:
+  
+    - name: install mc
+      ansible.builtin.package:
+        name:
+          - 'mc'
+        state: present
+      tags: installation  
+
+    - name: include main vars
+      include_vars:
+        dir: vars/main
+        files_matching: "{{ private_domain }}.yml"
+
+    - name: include credentials vars
+      include_vars:
+        dir: vars/credentials
+        files_matching: "{{ private_domain }}.yml"
+
+    - name: include users and groups vars
+      include_vars:
+        file: access.yml
+        name: access
+
+    - include_role:
+        name: users
+      vars:
+        users_groups: "{{ access.users_groups }}"
+        users: "{{ access.users }}"
+
+    - include_role:
+        name: telegraf
+      vars:
+        telegraf_agent_hostname: "{{ ansible_fqdn }}"
+        telegraf_agent_external_interval: True
+      when: telegraf_config_uri is defined
+      
+    - name: stuff
+      import_tasks: stuff.yml
+        
+    - name: send success message
+      include_role:
+        name: discord
+      
+    rescue:
+      - name: send fail message
+        include_role:
+          name: discord
+      
+      - name: re-raise the error
+        fail:
+          msg: "{{ ansible_failed_result }}"
+        when: ansible_failed_result is defined
