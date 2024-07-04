@@ -5,9 +5,10 @@ TAGS=""
 EXTRA=""
 REGION=""
 
-while getopts ":e:r:-:" option; do
+while getopts ":e:r:-:p:" option; do
   case "${option}" in
     e) EXTRA="${OPTARG}";;
+    p) PLAYBOOK_NAME="${OPTARG}";;
     r) REGION="${OPTARG}";;
     -)
       case "${OPTARG}" in
@@ -22,6 +23,7 @@ while getopts ":e:r:-:" option; do
 done
 
 echo "EXTRA: $EXTRA"
+echo "PLAYBOOK_NAME: $PLAYBOOK_NAME"
 echo "REGION: $REGION"
 echo "SKIP_TAGS: $SKIP_TAGS"
 echo "TAGS: $TAGS"
@@ -46,11 +48,12 @@ main() {
     #ansible-galaxy install -r requirements.yml
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
 
+    [[ -n "${PLAYBOOK_NAME}" ]] && PLAYBOOK_NAME_OPTION="-p \"${PLAYBOOK_NAME}\"" || PLAYBOOK_NAME_OPTION=""
     [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
     [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
     [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
-    COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
+    COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} ${PLAYBOOK_NAME} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
     PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
 
     if [ ! -f "main.yml" ]; then
