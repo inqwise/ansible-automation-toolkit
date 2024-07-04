@@ -38,16 +38,24 @@ catch_error() {
 
 main() {
     set -euxo pipefail
-    pip install -r requirements.txt --user virtualenv --timeout 60
+    #pip install -r requirements.txt --user virtualenv --timeout 60
+    [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
     export PATH=$PATH:~/.local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-common-collection/roles"
-    ansible-galaxy install -r requirements.yml
+    #ansible-galaxy install -r requirements.yml
+    [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
 
     [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
     [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
     [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
     COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
+    PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
+
+    if [ ! -f "main.yml" ]; then
+        echo "Local main.yml not found. Downloading from URL..."
+        curl -O $PLAYBOOK_URL
+    fi
 
     SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
     echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"

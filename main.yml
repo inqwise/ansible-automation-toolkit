@@ -1,4 +1,4 @@
-- name: grafana
+- name: "{{ playbook_name }}"
   hosts: all
   become: yes  # Use sudo to execute tasks
       
