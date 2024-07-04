@@ -40,8 +40,8 @@ main() {
     set -euxo pipefail
     #pip install -r requirements.txt --user virtualenv --timeout 60
     [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
-    echo "something"
     export PATH=$PATH:~/.local/bin
+    echo "something"
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-common-collection/roles"
     #ansible-galaxy install -r requirements.yml
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
