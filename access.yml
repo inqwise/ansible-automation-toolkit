@@ -1,0 +1,19 @@
+users_groups:
+  - name: "{{ group }}"
+users:
+  - name: "{{ user }}"
+    group: "{{ group }}"
+    append: yes
+  - name: glassfox
+    cron_allow: yes
+    sudo_options: "ALL=(ALL) NOPASSWD: ALL"
+    expires: -1
+    authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDK9YMoRoqDfg6uXj1XTl/ys2cmzV2LXeIOt4wjrrl0tGYit1mbWzewcu9fd6IlIZtKqpN2hImnB+aa/LRhP1fBMTH4SvF0lvaxC3OOKZDP8YdmWIB66AJUVEZCca5SaI39ibWf88LcUcDtecGdx1JgJ5Og0MC+w90bNTe8J0si3Q/p9uXe7UITdDgRjEoc5SQbaCC8agEvSkInABAvyfHyrQlt1WDyKP8tk5Wmh1quecVgfN8qAwCPBf2wim5RB+w2MnGNsap414nqpjaT/EewjNyxSxWb7q0GvRHVrUPoxLg78YILcFbBHbylS/mQsHHzsvES/gjAZXnuOpjcIJjP"
+  - name: terragootman
+    cron_allow: yes
+    sudo_options: "ALL=(ALL) NOPASSWD: ALL"
+    expires: -1
+    authorized_keys:
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDnz/4ODSEdu6wp61y88GQkeWIVcgW9SkXnztk4po12870Zo4hM9Lq7QWJSgM7FSD0CY9WXjUZ6YWuIPhmBhhFih6k+jFjQoYQ6cN32Pmwokplj6aF7hUZfbgoXOjTcgmrBXfpcAtYVKUzidQUTOf/xd+p70fazv19dYwNsBdrcUjEW77nlR9A43xkSSxVmBsAWLCiLW4zmfg8DKgFu7MHt7zJXYUtjUwS6TTRihHEUUo+QrSYiTWLNtMIs8d3q2R4IzfOT7FaQ1fI4pLvOH0NTHrFSdoW64VUpZNUOKdwX6XwdNwiq2Xsw/2M36sUI/piOsd9PWEKLlWVoGx6ZCTVXL32TZkCcjK+viL7mfzmEcEH1krpSnBNMPKfV0i3065BOdXoi9XHbHIYgkePCEylyGlIdkBBRyn6KUjRghfCMCztwA/bRmxXHIiTgDjfTtrn5i4a04NPOL/e88t41fOBOiJLhZMu/0rV2vdZF0w9ushRKWAU45+UvSbAmpBoiDB8= terragootman@terras-MacBook-Pro.local"
+       
