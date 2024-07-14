@@ -33,7 +33,7 @@ fi
 catch_error() {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:992382682634:errors" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$FUNCTION_ARN_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 
 main() {
@@ -41,17 +41,30 @@ main() {
     #yum install jq -y
     #EXTRA=$(echo "${EXTRA:=\{\}}" |  jq --slurp --compact-output --raw-output 'reduce .[] as $item ({}; . * $item)')
     echo "extra:${EXTRA:=default}"
-    pip3.8 install -r requirements.txt --timeout 60
+    [ -f "requirements.txt" ] || curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt && pip3.8 install -r requirements.txt --timeout 60
     export PATH=$PATH:/usr/local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
-    ansible-galaxy install -p roles -r requirements.yml
-    ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml --syntax-check
-    ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml -e $EXTRA --vault-password-file vault_password
+    [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
+
+    [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
+    [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
+    [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
+
+    COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
+    PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
+
+    if [ ! -f "main.yml" ]; then
+        echo "Local main.yml not found. Downloading from URL..."
+        curl -O $PLAYBOOK_URL
+    fi
+
+    SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
+    echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"
+    eval "${SYNTAX_CHECK_COMMAND}"
+
+    echo "Running command: ${COMMAND}"
+    eval "${COMMAND}"
     # --skip-tags openvpn 
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1
-
-
-#ansible-playbook --vault-password-file /tmp/ansible-openvpn/secret main.yml --syntax-check
-#ansible-playbook --vault-password-file /tmp/ansible-openvpn/secret --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml

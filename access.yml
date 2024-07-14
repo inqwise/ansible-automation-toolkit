@@ -1,8 +1,8 @@
 users_groups:
-  - name: "{{ group }}"
+  - name: "{{ app_group }}"
 users:
-  - name: "{{ user }}"
-    group: "{{ group }}"
+  - name: "{{ app_user }}"
+    group: "{{ app_group }}"
     append: yes
   - name: glassfox
     cron_allow: yes

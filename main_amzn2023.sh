@@ -35,7 +35,7 @@ fi
 catch_error() {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:992382682634:errors" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$FUNCTION_ARN_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 
 main() {
@@ -43,7 +43,6 @@ main() {
     #pip install -r requirements.txt --user virtualenv --timeout 60
     [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
     export PATH=$PATH:~/.local/bin
-    echo "something"
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
     #ansible-galaxy install -r requirements.yml
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
