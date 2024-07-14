@@ -40,7 +40,8 @@ main() {
     set -eEuo pipefail
     echo "start main_amzn2.sh"
     echo "extra:${EXTRA:=default}"
-    [ -f "requirements.txt" ] || curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt && pip3.8 install -r requirements.txt --timeout 60
+    [ -f "requirements.txt" ] || curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt 
+    pip3.8 install -r requirements.txt --timeout 60
     export PATH=$PATH:/usr/local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
