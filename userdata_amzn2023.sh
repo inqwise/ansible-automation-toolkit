@@ -32,7 +32,7 @@ catch_error () {
 }
 main () {
     set -euxo pipefail
-    echo "Start user data"
+    echo "Start userdata_amzn2023.sh"
     aws s3 cp $GET_PIP_URL - | python3
     aws s3 sync $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
     echo "$VAULT_PASSWORD" > /vault_password

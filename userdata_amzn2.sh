@@ -29,7 +29,7 @@ catch_error () {
 }
 main () {
     set -euxo pipefail
-    echo "Start user data"
+    echo "Start userdata_amzn2.sh"
     yum -y erase python3 && amazon-linux-extras install python3.8 && yum -y install openssl-devel
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
     ##aws s3 cp s3://bootstrap-pension-stg/playbooks/ansible-openvpn/ /tmp/ansible-openvpn --recursive --region $REGION && cd /tmp/ansible-openvpn    

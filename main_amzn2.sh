@@ -38,8 +38,7 @@ catch_error() {
 
 main() {
     set -eEuo pipefail
-    #yum install jq -y
-    #EXTRA=$(echo "${EXTRA:=\{\}}" |  jq --slurp --compact-output --raw-output 'reduce .[] as $item ({}; . * $item)')
+    echo "start main_amzn2.sh"
     echo "extra:${EXTRA:=default}"
     [ -f "requirements.txt" ] || curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt && pip3.8 install -r requirements.txt --timeout 60
     export PATH=$PATH:/usr/local/bin
@@ -64,7 +63,6 @@ main() {
 
     echo "Running command: ${COMMAND}"
     eval "${COMMAND}"
-    # --skip-tags openvpn 
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1

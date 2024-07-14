@@ -40,14 +40,12 @@ catch_error() {
 
 main() {
     set -euxo pipefail
-    #pip install -r requirements.txt --user virtualenv --timeout 60
+    echo "start main_amzn2023.sh"
     [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
     export PATH=$PATH:~/.local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
-    #ansible-galaxy install -r requirements.yml
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
 
-    #[[ -n "${PLAYBOOK_NAME}" ]] && PLAYBOOK_NAME_OPTION="-p \"${PLAYBOOK_NAME}\"" || PLAYBOOK_NAME_OPTION=""
     [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
     [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
     [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
