@@ -18,8 +18,8 @@ while getopts ":e:r:-:" option; do
     r) REGION="${OPTARG}";;
     -)
       case "${OPTARG}" in
-        account-id) ACCOUNT_ID="4{!OPTIND}"; OPTIND=$((OPTIND + 1));;
-        topic-name) TOPIC_NAME="4{!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        account-id) ACCOUNT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        topic-name) TOPIC_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         skip-tags) SKIP_TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         *) echo "Invalid option --${OPTARG}"; usage;;
