@@ -34,7 +34,7 @@ main () {
     set -euxo pipefail
     echo "Start userdata_amzn2023.sh"
     aws s3 cp $GET_PIP_URL - | python3
-    aws s3 sync $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
     echo "$VAULT_PASSWORD" > /vault_password
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION -e $FUNCTION_ARN_NAME $ACCOUNT_ID
     rm /vault_password
