@@ -20,7 +20,6 @@ echo "Topic Name: $TOPIC_NAME"
 
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
-echo "Secret:$VAULT_PASSWORD"
 
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')

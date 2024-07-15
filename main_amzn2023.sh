@@ -64,7 +64,12 @@ main() {
     [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
     export PATH=$PATH:~/.local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
-    [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
+
+    if [ ! -f "requirements.yml" ]; then
+        echo "Local requirements.yml not found. Downloading from URL..."
+        curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
+    fi
+    ansible-galaxy install -p roles -r requirements.yml
 
     [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
     [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
