@@ -54,7 +54,7 @@ fi
 
 catch_error() {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred: $1"
+    echo "An error occurred in main.sh: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 
@@ -63,7 +63,7 @@ main() {
     echo "start main_amzn2.sh"
     echo "extra:${EXTRA:=default}"
     [ -f "requirements.txt" ] && pip3.8 install -r requirements.txt --user virtualenv || pip3.8 install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
-    export PATH=$PATH:/usr/local/bin
+    export PATH=$PATH:~/.local/bin
     export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
     [ -f "requirements.yml" ] && ansible-galaxy install -p roles -r requirements.yml || ansible-galaxy install -p roles -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
 
