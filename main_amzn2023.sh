@@ -54,8 +54,8 @@ fi
 
 catch_error() {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    echo "An error occurred in main.sh: $1"
+    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 
 main() {
