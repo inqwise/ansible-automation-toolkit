@@ -15,8 +15,8 @@ echo "Account ID: $ACCOUNT_ID"
 PLAYBOOK_NAME=$(eval $METADATA_REQUEST/playbook_name)
 echo "playbook_name:$PLAYBOOK_NAME"
 
-FUNCTION_ARN_NAME=$(echo "$PARAMETER" | grep 'function_arn_name' | awk '{print $2}')
-echo "Function Arn Name: $FUNCTION_ARN_NAME"
+TOPIC_NAME=$(echo "$PARAMETER" | grep 'topic_name' | awk '{print $2}')
+echo "Topic Name: $TOPIC_NAME"
 
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
@@ -34,7 +34,7 @@ main () {
     aws s3 sync $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
     ##aws s3 cp s3://bootstrap-pension-stg/playbooks/ansible-openvpn/ /tmp/ansible-openvpn --recursive --region $REGION && cd /tmp/ansible-openvpn    
     echo "$VAULT_PASSWORD" > /vault_password
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2.sh | bash -s -- -r #{REGION} -e #{FUNCTION_ARN_NAME} #{ACCOUNT_ID}
+    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
     rm /vault_password
     echo "End user data"
 }

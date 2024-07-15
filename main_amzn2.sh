@@ -1,9 +1,16 @@
 #!/bin/bash
 
+ACCOUNT_ID=""
+TOPIC_NAME=""
 SKIP_TAGS=""
 TAGS=""
 EXTRA=""
 REGION=""
+
+usage() {
+    echo "Usage: $0 --account-id <account-id> --topic-name <topic-name> [-e <extra>] [-r <region>] [--skip-tags <skip-tags>] [--tags <tags>]"
+    exit 1
+}
 
 while getopts ":e:r:-:" option; do
   case "${option}" in
@@ -13,18 +20,33 @@ while getopts ":e:r:-:" option; do
       case "${OPTARG}" in
         skip-tags) SKIP_TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
-        *) echo "Invalid option --${OPTARG}"; exit 1;;
+        account-id) ACCOUNT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        topic-name) TOPIC_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        *) echo "Invalid option --${OPTARG}"; usage;;
       esac
       ;;
-    \?) echo "Invalid option: -${OPTARG}" >&2; exit 1;;
-    :) echo "Option -${OPTARG} requires an argument." >&2; exit 1;;
+    \?) echo "Invalid option: -${OPTARG}" >&2; usage;;
+    :) echo "Option -${OPTARG} requires an argument." >&2; usage;;
   esac
 done
+
+# Validate mandatory arguments
+if [ -z "$ACCOUNT_ID" ]; then
+    echo "Error: --account-id is mandatory."
+    usage
+fi
+
+if [ -z "$TOPIC_NAME" ]; then
+    echo "Error: --topic-name is mandatory."
+    usage
+fi
 
 echo "EXTRA: $EXTRA"
 echo "REGION: $REGION"
 echo "SKIP_TAGS: $SKIP_TAGS"
 echo "TAGS: $TAGS"
+echo "ACCOUNT_ID: $ACCOUNT_ID"
+echo "TOPIC_NAME: $TOPIC_NAME"
 
 if [ -z "$REGION" ]; then
     REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p')
@@ -33,7 +55,7 @@ fi
 catch_error() {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$FUNCTION_ARN_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 
 main() {
