@@ -30,11 +30,11 @@ main () {
     set -euxo pipefail
     echo "Start userdata_amzn2.sh"
     yum -y erase python3 && amazon-linux-extras install python3.8 && yum -y install openssl-devel
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION && cd /tmp/$PLAYBOOK_NAME
-    ##aws s3 cp s3://bootstrap-pension-stg/playbooks/ansible-openvpn/ /tmp/ansible-openvpn --recursive --region $REGION && cd /tmp/ansible-openvpn    
-    echo "$VAULT_PASSWORD" > /vault_password
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME /tmp/$PLAYBOOK_NAME --region $REGION
+    cd /tmp/$PLAYBOOK_NAME
+    echo "$VAULT_PASSWORD" > vault_password
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
-    rm /vault_password
+    rm vault_password
     echo "End user data"
 }
 trap 'catch_error "$ERROR"' ERR
