@@ -25,7 +25,7 @@ echo "Secret:$VAULT_PASSWORD"
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$FUNCTION_ARN_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:function:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 main () {
     set -euxo pipefail
