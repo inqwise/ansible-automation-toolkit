@@ -25,6 +25,12 @@
         dir: vars/credentials
         files_matching: "{{ private_domain }}.yml"
 
+    - name: Download foo.conf
+      get_url:
+        url: "{{ access_file_url }}"
+        dest: /vars/access.yml
+        mode: '0440'
+
     - name: include users and groups vars
       include_vars:
         file: access.yml
