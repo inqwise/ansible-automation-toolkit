@@ -28,7 +28,7 @@
     - name: Download access file from url
       get_url:
         url: "{{ access_file_url }}"
-        dest: /vars/access.yml
+        dest: "{{ access_remote_base_path }}"
         mode: '0440'
 
     - name: include users and groups vars
