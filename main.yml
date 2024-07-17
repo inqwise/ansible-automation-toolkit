@@ -56,9 +56,7 @@
           }}
       when: users is defined
 
-    - name: Debug users variable
-      debug:
-        var: users
+    - debug: var=users
       verbosity: 1
       tags: debug
 
