@@ -56,8 +56,10 @@
           }}
       when: users is defined
 
-    - debug: var=users
-      verbosity: 1
+    - name: Print return information from the previous task
+      ansible.builtin.debug:
+        var: users
+        verbosity: 1
       tags: debug
 
     - include_role:
