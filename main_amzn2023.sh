@@ -52,44 +52,33 @@ if [ -z "$REGION" ]; then
     REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p')
 fi
 
-catch_error() {
-    INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred in main.sh: $1"
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
-}
+set -euxo pipefail
+echo "start main_amzn2023.sh"
+[ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
+export PATH=$PATH:~/.local/bin
+export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
 
-main() {
-    set -euxo pipefail
-    echo "start main_amzn2023.sh"
-    [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
-    export PATH=$PATH:~/.local/bin
-    export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
+if [ ! -f "requirements.yml" ]; then
+    echo "Local requirements.yml not found. Downloading from URL..."
+    curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
+fi
+ansible-galaxy install -p roles -r requirements.yml
 
-    if [ ! -f "requirements.yml" ]; then
-        echo "Local requirements.yml not found. Downloading from URL..."
-        curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
-    fi
-    ansible-galaxy install -p roles -r requirements.yml
+[[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
+[[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
+[[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
-    [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
-    [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
-    [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
+COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
+PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
 
-    COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
-    PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
+if [ ! -f "main.yml" ]; then
+    echo "Local main.yml not found. Downloading from URL..."
+    curl -O $PLAYBOOK_URL
+fi
 
-    if [ ! -f "main.yml" ]; then
-        echo "Local main.yml not found. Downloading from URL..."
-        curl -O $PLAYBOOK_URL
-    fi
+SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
+echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"
+eval "${SYNTAX_CHECK_COMMAND}"
 
-    SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
-    echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"
-    eval "${SYNTAX_CHECK_COMMAND}"
-
-    echo "Running command: ${COMMAND}"
-    eval "${COMMAND}"
-}
-
-trap 'catch_error "$ERROR"' ERR
-{ ERROR=$(main 2>&1 1>&$out); } {out}>&1
+echo "Running command: ${COMMAND}"
+eval "${COMMAND}"
