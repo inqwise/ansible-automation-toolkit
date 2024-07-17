@@ -1,9 +1,4 @@
-users_groups:
-  - name: "{{ app_group }}"
 users:
-  - name: "{{ app_user }}"
-    group: "{{ app_group }}"
-    append: yes
   - name: glassfox
     cron_allow: yes
     sudo_options: "ALL=(ALL) NOPASSWD: ALL"
@@ -15,5 +10,5 @@ users:
     sudo_options: "ALL=(ALL) NOPASSWD: ALL"
     expires: -1
     authorized_keys:
-      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDnz/4ODSEdu6wp61y88GQkeWIVcgW9SkXnztk4po12870Zo4hM9Lq7QWJSgM7FSD0CY9WXjUZ6YWuIPhmBhhFih6k+jFjQoYQ6cN32Pmwokplj6aF7hUZfbgoXOjTcgmrBXfpcAtYVKUzidQUTOf/xd+p70fazv19dYwNsBdrcUjEW77nlR9A43xkSSxVmBsAWLCiLW4zmfg8DKgFu7MHt7zJXYUtjUwS6TTRihHEUUo+QrSYiTWLNtMIs8d3q2R4IzfOT7FaQ1fI4pLvOH0NTHrFSdoW64VUpZNUOKdwX6XwdNwiq2Xsw/2M36sUI/piOsd9PWEKLlWVoGx6ZCTVXL32TZkCcjK+viL7mfzmEcEH1krpSnBNMPKfV0i3065BOdXoi9XHbHIYgkePCEylyGlIdkBBRyn6KUjRghfCMCztwA/bRmxXHIiTgDjfTtrn5i4a04NPOL/e88t41fOBOiJLhZMu/0rV2vdZF0w9ushRKWAU45+UvSbAmpBoiDB8= terragootman@terras-MacBook-Pro.local"
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDnz/4ODSEdu6wp61y88GQkeWIVcgW9SkXnztk4po12870Zo4hM9Lq7QWJSgM7FSD0CY9WXjUZ6YWuIPhmBhhFih6k+jFjQoYQ6cN32Pmwokplj6aF7hUZfbgoXOjTcgmrBXfpcAtYVKUzidQUTOf/xd+p70fazv19dYwNsBdrcUjEW77nlR9A43xkSSxVmBsAWLCiLW4zmfg8DKgFu7MHt7zJXYUtjUwS6TTRihHEUUo+QrSYiTWLNtMIs8d3q2R4IzfOT7FaQ1fI4pLvOH0NTHrFSdoW64VUpZNUOKdwX6XwdNwiq2Xsw/2M36sUI/piOsd9PWEKLlWVoGx6ZCTVXL32TZkCcjK+viL7mfzmEcEH1krpSnBNMPKfV0i3065BOdXoi9XHbHIYgkePCEylyGlIdkBBRyn6KUjRghfCMCztwA/bRmxXHIiTgDjfTtrn5i4a04NPOL/e88t41fOBOiJLhZMu/0rV2vdZF0w9ushRKWAU45+UvSbAmpBoiDB8="
        

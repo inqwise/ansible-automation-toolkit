@@ -25,7 +25,7 @@
         dir: vars/credentials
         files_matching: "{{ private_domain }}.yml"
 
-    - name: Download access file from url
+    - name: download access file from url
       get_url:
         url: "{{ access_file_url }}"
         dest: "{{ access_remote_base_path }}"
@@ -35,6 +35,30 @@
       include_vars:
         file: access.yml
         name: access
+
+    - name: add groups to access
+      set_fact:
+        access: >-
+          {{
+            access | combine({
+              'users_groups': (access.users_groups | default([])) | extend(users_groups)
+            })
+          }}
+      when: users_groups is defined
+
+    - name: add users to access
+      set_fact:
+        access: >-
+          {{
+            access | combine({
+              'users': (access.users | default([])) | extend(users)
+            })
+          }}
+      when: users is defined
+
+    - debug: var=users
+      verbosity: 1
+      tags: debug
 
     - include_role:
         name: users
