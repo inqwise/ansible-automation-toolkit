@@ -25,7 +25,7 @@
         dir: vars/credentials
         files_matching: "{{ private_domain }}.yml"
 
-    - name: Download foo.conf
+    - name: Download access file from url
       get_url:
         url: "{{ access_file_url }}"
         dest: /vars/access.yml
