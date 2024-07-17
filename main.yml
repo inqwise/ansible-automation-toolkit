@@ -41,7 +41,7 @@
         access: >-
           {{
             access | combine({
-              'users_groups': (access.users_groups | default([])) | extend(users_groups)
+              'users_groups': (access.users_groups | default([])) | union(users_groups)
             })
           }}
       when: users_groups is defined
@@ -51,7 +51,7 @@
         access: >-
           {{
             access | combine({
-              'users': (access.users | default([])) | extend(users)
+              'users': (access.users | default([])) | union(users)
             })
           }}
       when: users is defined
