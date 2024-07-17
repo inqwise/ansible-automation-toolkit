@@ -83,9 +83,9 @@ main() {
         curl -O $PLAYBOOK_URL
     fi
 
-    #SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
-    #echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"
-    #eval "${SYNTAX_CHECK_COMMAND}"
+    SYNTAX_CHECK_COMMAND="${COMMAND} --syntax-check"
+    echo "Running syntax check command: ${SYNTAX_CHECK_COMMAND}"
+    eval "${SYNTAX_CHECK_COMMAND}"
 
     echo "Running command: ${COMMAND}"
     eval "${COMMAND}"
