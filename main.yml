@@ -56,7 +56,7 @@
           }}
       when: users is defined
 
-    - name: Print return information from the previous task
+    - name: debuging users
       ansible.builtin.debug:
         var: users
         verbosity: 1
