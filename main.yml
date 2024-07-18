@@ -25,12 +25,6 @@
         dir: vars/credentials
         files_matching: "{{ private_domain }}.yml"
 
-    - name: download access file from url
-      get_url:
-        url: "{{ access_file_url }}"
-        dest: "{{ access_remote_base_path }}"
-        mode: '0440'
-
     - name: include users and groups vars
       include_vars:
         file: access.yml
