@@ -62,7 +62,7 @@ if [ ! -f "requirements_amzn2023.yml" ]; then
     echo "Local requirements_amzn2023.yml not found. Downloading from URL..."
     curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements_amzn2023.yml
 fi
-ansible-galaxy install -p roles -r requirements.yml
+ansible-galaxy install -p roles -r requirements_amzn2023.yml
 
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
