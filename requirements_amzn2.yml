@@ -1,0 +1,4 @@
+---
+roles:
+  - name: users
+    src: https://github.com/robertdebock/ansible-role-users/archive/refs/tags/5.6.0.tar.gz
