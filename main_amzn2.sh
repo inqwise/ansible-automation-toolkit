@@ -59,9 +59,9 @@ echo "extra:${EXTRA:=default}"
 export PATH=$PATH:~/.local/bin
 export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
 
-if [ ! -f "requirements.yml" ]; then
-    echo "Local requirements.yml not found. Downloading from URL..."
-    curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.yml
+if [ ! -f "requirements_amzn2.yml" ]; then
+    echo "Local requirements_amzn2.yml not found. Downloading from URL..."
+    curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements_amzn2.yml
 fi
 ansible-galaxy install -p roles -r requirements.yml
 
