@@ -83,5 +83,5 @@
       
       - name: re-raise the error
         fail:
-          msg: "{{ ansible_failed_result }}"
+          msg: "{{ ansible_failed_result.msg | default(ansible_failed_result | to_json) }}"
         when: ansible_failed_result is defined
