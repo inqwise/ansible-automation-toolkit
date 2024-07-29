@@ -33,9 +33,12 @@ main () {
     set -euo pipefail
     echo "Start userdata_amzn2023.sh"
     aws s3 cp $GET_PIP_URL - | python3
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/$PLAYBOOK_NAME --recursive --region $REGION --exclude '.*' --exclude '*/.*'
-    cd /tmp/$PLAYBOOK_NAME
+    echo "download playbook"
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
+    chmod -R 755 /tmp/deployment
+    cd /tmp/deployment
     echo "$VAULT_PASSWORD" > vault_password
+    echo "execute playbook"
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
     rm vault_password
     echo "End user data"

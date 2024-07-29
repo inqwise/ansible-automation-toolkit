@@ -52,7 +52,7 @@ if [ -z "$REGION" ]; then
     REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p')
 fi
 
-set -euxo pipefail
+set -euo pipefail
 echo "start main_amzn2023.sh"
 [ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
 export PATH=$PATH:~/.local/bin
