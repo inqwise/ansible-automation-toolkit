@@ -72,8 +72,8 @@ ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit
 COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
 PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
 
-if [ ! -f "access.yml" ]; then
-    echo "Local access.yml not found. Downloading from URL..."
+if [ ! -f "vars/access.yml" ]; then
+    echo "Local vars/access.yml not found. Downloading from URL..."
     curl $ACCESS_URL -o vars/access.yml
 fi
 

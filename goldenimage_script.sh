@@ -26,7 +26,7 @@ VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --
 
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred in userdata: $1"
+    echo "An error occurred in goldenimage_script: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 main () {
@@ -38,7 +38,7 @@ main () {
     chmod -R 755 /tmp/deployment
     cd /tmp/deployment
     echo "$VAULT_PASSWORD" > vault_password
-    echo "execute playbook"
+    echo "execute playbook in $(PWD)"
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
     rm vault_password
     echo "End user data"
