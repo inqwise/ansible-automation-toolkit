@@ -15,6 +15,9 @@ echo "Playbook Base URL: $PLAYBOOK_BASE_URL"
 ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
 echo "Account ID: $ACCOUNT_ID"
 
+PLAYBOOK_NAME=$(eval $METADATA_REQUEST/playbook_name)
+echo "playbook_name:$PLAYBOOK_NAME"
+
 TOPIC_NAME=$(echo "$PARAMETER" | grep 'topic_name' | awk '{print $2}')
 echo "Topic Name: $TOPIC_NAME"
 
