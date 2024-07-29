@@ -34,6 +34,7 @@ main () {
     echo "Start userdata_amzn2023.sh"
     aws s3 cp $GET_PIP_URL - | python3
     echo "download playbook"
+    mkdir /tmp/deployment
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
     chmod -R 755 /tmp/deployment
     cd /tmp/deployment
