@@ -38,8 +38,8 @@ main () {
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
     chmod -R 755 /tmp/deployment
     cd /tmp/deployment
+    echo "execute playbook in $(pwd)"
     echo "$VAULT_PASSWORD" > vault_password
-    echo "execute playbook in $(PWD)"
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
     rm vault_password
     echo "End user data"
