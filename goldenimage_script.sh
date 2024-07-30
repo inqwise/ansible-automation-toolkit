@@ -35,7 +35,7 @@ main () {
     aws s3 cp $GET_PIP_URL - | python3
     echo "download playbook"
     mkdir /tmp/deployment
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
     chmod -R 755 /tmp/deployment
     cd /tmp/deployment
     echo "execute playbook in $(pwd)"
