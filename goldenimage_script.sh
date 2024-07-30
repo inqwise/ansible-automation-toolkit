@@ -32,6 +32,8 @@ catch_error () {
 main () {
     set -euo pipefail
     echo "Start userdata_amzn2023.sh"
+    python3 -m venv /tmp/ansibleenv
+    source /tmp/ansibleenv/bin/activate
     aws s3 cp $GET_PIP_URL - | python3
     echo "download playbook"
     mkdir /tmp/deployment
