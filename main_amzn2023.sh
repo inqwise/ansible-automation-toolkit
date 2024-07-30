@@ -54,8 +54,10 @@ fi
 
 set -euo pipefail
 echo "start main_amzn2023.sh"
-[ -f "requirements.txt" ] && pip install -r requirements.txt --user virtualenv || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
-export PATH=$PATH:~/.local/bin
+python3 -m venv /tmp/ansibleenv
+source /tmp/ansibleenv/bin/activate
+[ -f "requirements.txt" ] && pip install -r requirements.txt || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt
+#export PATH=$PATH:~/.local/bin
 export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
 
 if [ ! -f "requirements_amzn2023.yml" ]; then
