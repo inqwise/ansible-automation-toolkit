@@ -42,7 +42,8 @@ main () {
     cd /tmp/deployment
     echo "execute playbook in $(pwd)"
     echo "$VAULT_PASSWORD" > vault_password
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
+    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME' es_discovery_cluster=pension-test discord_message_owner_name=terra"
+    #curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r eu-west-1 -e "playbook_name=ansible-elasticsearch es_discovery_cluster=pension-test discord_message_owner_name=terra" --topic-name pre_playbook_errors --account-id 339712742264
     rm vault_password
     echo "End user data"
 }
