@@ -22,7 +22,7 @@ SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
 
 MAIN_SH_ARGS = <<MARKER
--r #{AWS_REGION} -e "playbook_name=ansible-consul discord_message_owner_name=#{Etc.getpwuid(Process.uid).name}" --topic-name #{TOPIC_NAME} --account-id #{ACCOUNT_ID}
+-r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME' discord_message_owner_name=terra"
 MARKER
 
 catch_error () {
