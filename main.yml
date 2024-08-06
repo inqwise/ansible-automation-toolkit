@@ -1,6 +1,9 @@
 - name: "{{ playbook_name }}"
   hosts: all
   become: yes  # Use sudo to execute tasks
+
+  collections:
+    - inqwise.common
       
   vars_files:
     - defaults.yml

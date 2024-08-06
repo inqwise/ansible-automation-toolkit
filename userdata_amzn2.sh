@@ -21,6 +21,10 @@ echo "Topic Name: $TOPIC_NAME"
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
 
+MAIN_SH_ARGS = <<MARKER
+-r #{AWS_REGION} -e "playbook_name=ansible-consul discord_message_owner_name=#{Etc.getpwuid(Process.uid).name}" --topic-name #{TOPIC_NAME} --account-id #{ACCOUNT_ID}
+MARKER
+
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred in userdata: $1"
@@ -33,7 +37,14 @@ main () {
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/ /tmp/$PLAYBOOK_NAME --recursive --region $REGION
     cd /tmp/$PLAYBOOK_NAME
     echo "$VAULT_PASSWORD" > vault_password
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
+    if [ -f "main.sh" ]; then
+    echo "Local main.sh found. Run the local main.sh script..."
+    bash main.sh #{MAIN_SH_ARGS}
+    else
+    echo "Local main.sh not found. running the main.sh script from the URL..."
+    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2.sh | bash -s -- #{MAIN_SH_ARGS}
+    fi
+    #curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME'"
     rm vault_password
     echo "End user data"
 }

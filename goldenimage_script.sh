@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#start main.sh localy:
+#curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r eu-west-1 -e "playbook_name=ansible-elasticsearch es_discovery_cluster=pension-test discord_message_owner_name=terra" --topic-name pre_playbook_errors --account-id 339712742264
+
 REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p');
 echo "region:$REGION"
 
@@ -24,6 +27,10 @@ echo "Topic Name: $TOPIC_NAME"
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
 
+MAIN_SH_ARGS = <<MARKER
+-r #{AWS_REGION} -e "playbook_name=ansible-consul discord_message_owner_name=#{Etc.getpwuid(Process.uid).name}" --topic-name #{TOPIC_NAME} --account-id #{ACCOUNT_ID}
+MARKER
+
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     echo "An error occurred in goldenimage_script: $1"
@@ -31,7 +38,7 @@ catch_error () {
 }
 main () {
     set -euo pipefail
-    echo "Start userdata_amzn2023.sh"
+    echo "Start goldenimage_script.sh"
     python3 -m venv /tmp/ansibleenv
     source /tmp/ansibleenv/bin/activate
     aws s3 cp $GET_PIP_URL - | python3
@@ -42,8 +49,14 @@ main () {
     cd /tmp/deployment
     echo "execute playbook in $(pwd)"
     echo "$VAULT_PASSWORD" > vault_password
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME' es_discovery_cluster=pension-test discord_message_owner_name=terra"
-    #curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r eu-west-1 -e "playbook_name=ansible-elasticsearch es_discovery_cluster=pension-test discord_message_owner_name=terra" --topic-name pre_playbook_errors --account-id 339712742264
+    if [ -f "main.sh" ]; then
+    echo "Local main.sh found. Run the local main.sh script..."
+    bash main.sh #{MAIN_SH_ARGS}
+    else
+    echo "Local main.sh not found. running the main.sh script from the URL..."
+    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh | bash -s -- #{MAIN_SH_ARGS}
+    fi
+    #curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r $REGION --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID -e "playbook_name='$PLAYBOOK_NAME' es_discovery_cluster=pension-test discord_message_owner_name=terra"
     rm vault_password
     echo "End user data"
 }
