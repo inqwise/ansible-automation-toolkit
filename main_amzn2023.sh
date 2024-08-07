@@ -64,6 +64,12 @@ if [ ! -f "requirements_amzn2023.yml" ]; then
 fi
 ansible-galaxy install -p roles -r requirements_amzn2023.yml
 
+if [ -f "requirements_extra.yml" ]; then
+    echo "Found requirements_extra.yml ..."
+    ansible-galaxy install -p roles -r requirements_extra.yml
+fi
+
+
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
 [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
