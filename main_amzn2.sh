@@ -52,29 +52,31 @@ if [ -z "$REGION" ]; then
     REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p')
 fi
 
-set -eEuo pipefail
+set -euo pipefail
 echo "start main_amzn2.sh"
-echo "extra:${EXTRA:=default}"
-[ -f "requirements.txt" ] && pip3.8 install -r requirements.txt --user virtualenv || pip3.8 install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt --user virtualenv
-export PATH=$PATH:~/.local/bin
-export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
+[ -f "requirements.txt" ] && pip3.8 install -r requirements.txt || pip3.8 install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements.txt
 
-if [ ! -f "requirements_amzn2.yml" ]; then
-    echo "Local requirements_amzn2.yml not found. Downloading from URL..."
-    curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements_amzn2.yml
+if [ ! -f "requirements.yml" ]; then
+    echo "Local requirements.yml not found. Downloading from URL..."
+    curl https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements_amzn2.yml -o requirements.yml
 fi
-ansible-galaxy install -p roles -r requirements_amzn2.yml
+ansible-galaxy install -r requirements.yml
+
+if [ -f "requirements_extra.yml" ]; then
+    echo "Found requirements_extra.yml ..."
+    ansible-galaxy install -r requirements_extra.yml
+fi
 
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
 [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
-ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/access.yml"
+ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/access.yml"
 COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
-PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
+PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main.yml"
 
-if [ ! -f "access.yml" ]; then
-    echo "Local access.yml not found. Downloading from URL..."
+if [ ! -f "vars/access.yml" ]; then
+    echo "Local vars/access.yml not found. Downloading from URL..."
     curl $ACCESS_URL -o vars/access.yml
 fi
 

@@ -18,10 +18,10 @@ while getopts ":e:r:-:" option; do
     r) REGION="${OPTARG}";;
     -)
       case "${OPTARG}" in
-        account-id) ACCOUNT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
-        topic-name) TOPIC_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         skip-tags) SKIP_TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        account-id) ACCOUNT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        topic-name) TOPIC_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         *) echo "Invalid option --${OPTARG}"; usage;;
       esac
       ;;
@@ -54,29 +54,26 @@ fi
 
 set -euo pipefail
 echo "start main_amzn2023.sh"
-[ -f "requirements.txt" ] && pip install -r requirements.txt || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements.txt
-#export PATH=$PATH:~/.local/bin
-export ANSIBLE_ROLES_PATH="$(pwd)/ansible-galaxy/roles"
+[ -f "requirements.txt" ] && pip install -r requirements.txt || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements.txt
 
-if [ ! -f "requirements_amzn2023.yml" ]; then
-    echo "Local requirements_amzn2023.yml not found. Downloading from URL..."
-    curl -O https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/requirements_amzn2023.yml
+if [ ! -f "requirements.yml" ]; then
+    echo "Local requirements.yml not found. Downloading from URL..."
+    curl https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements_amzn2023.yml -o requirements.yml
 fi
-ansible-galaxy install -p roles -r requirements_amzn2023.yml
+ansible-galaxy install -r requirements.yml
 
 if [ -f "requirements_extra.yml" ]; then
     echo "Found requirements_extra.yml ..."
-    ansible-galaxy install -p roles -r requirements_extra.yml
+    ansible-galaxy install -r requirements_extra.yml
 fi
-
 
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
 [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
-ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/access.yml"
+ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/access.yml"
 COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
-PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main.yml"
+PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main.yml"
 
 if [ ! -f "vars/access.yml" ]; then
     echo "Local vars/access.yml not found. Downloading from URL..."
