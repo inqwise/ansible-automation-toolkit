@@ -2,3 +2,7 @@
 roles:
   - name: users
     src: robertdebock.users
+
+collections:
+  - source: ./inqwise/
+    type: subdirs
