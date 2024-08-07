@@ -25,18 +25,20 @@ VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --
 
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred in userdata: $1"
+    echo "An error occurred in goldenimage_script_amzn2: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 main () {
     set -euo pipefail
-    echo "Start userdata_amzn2.sh"
+    echo "Start goldenimage_script_amzn2.sh"
     python3 -m venv /tmp/ansibleenv
     source /tmp/ansibleenv/bin/activate
     yum -y erase python3 && amazon-linux-extras install python3.8 && yum -y install openssl-devel
     echo "download playbook"
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /tmp/$PLAYBOOK_NAME --recursive --region $REGION --exclude '.*' --exclude '*/.*'
-    cd /tmp/$PLAYBOOK_NAME
+    mkdir /tmp/deployment
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
+    chmod -R 755 /tmp/deployment
+    cd /tmp/deployment
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then
     echo "Local main.sh not found. Download main.sh script from URL..."
