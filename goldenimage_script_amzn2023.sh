@@ -49,7 +49,11 @@ main () {
     fi
     bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME discord_message_owner_name=goldenimage" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID
     rm vault_password
-    echo "End user data"
+    # create empty tiles
+    > requirements.txt
+    > requirements.yml
+    [ -f requirements_extra.yml ] && rm requirements_extra.yml 
+    echo "End goldenimage_script"
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1
