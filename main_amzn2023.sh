@@ -6,9 +6,10 @@ SKIP_TAGS=""
 TAGS=""
 EXTRA=""
 REGION=""
+OFFLINE=false
 
 usage() {
-    echo "Usage: $0 --account-id <account-id> --topic-name <topic-name> [-e <extra>] [-r <region>] [--skip-tags <skip-tags>] [--tags <tags>]"
+    echo "Usage: $0 --account-id <account-id> --topic-name <topic-name> [-e <extra>] [-r <region>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline]"
     exit 1
 }
 
@@ -22,6 +23,7 @@ while getopts ":e:r:-:" option; do
         tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         account-id) ACCOUNT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         topic-name) TOPIC_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        offline) OFFLINE=true;;
         *) echo "Invalid option --${OPTARG}"; usage;;
       esac
       ;;
@@ -60,11 +62,17 @@ if [ ! -f "requirements.yml" ]; then
     echo "Local requirements.yml not found. Downloading from URL..."
     curl https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements_amzn2023.yml -o requirements.yml
 fi
-ansible-galaxy install -r requirements.yml
+
+GALAXY_COMMAND="ansible-galaxy install"
+if [ "$OFFLINE" = true ]; then
+    GALAXY_COMMAND="$GALAXY_COMMAND --offline"
+fi
+
+$GALAXY_COMMAND -r requirements.yml
 
 if [ -f "requirements_extra.yml" ]; then
     echo "Found requirements_extra.yml ..."
-    ansible-galaxy install -r requirements_extra.yml
+    $GALAXY_COMMAND -r requirements_extra.yml
 fi
 
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""

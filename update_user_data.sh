@@ -2,16 +2,18 @@
 
 # Function to display usage information
 usage() {
-  echo "Usage: $0 -t template_names -r region -u user_data_file [-p profile]"
+  echo "Usage: $0 -t template_names -r region -u user_data_file [-p profile] [-m]"
   echo "  -t  Comma-separated list of template names"
   echo "  -r  AWS region to use"
   echo "  -u  Path to the user data file"
   echo "  -p  AWS CLI profile to use (optional, default is to use the default profile)"
+  echo "  -m  Make the last created version the default (optional)"
   exit 1
 }
 
 # Parse command-line arguments
-while getopts ":t:r:u:p:" opt; do
+make_default=false
+while getopts ":t:r:u:p:m" opt; do
   case ${opt} in
     t )
       template_names=$OPTARG
@@ -24,6 +26,9 @@ while getopts ":t:r:u:p:" opt; do
       ;;
     p )
       profile=$OPTARG
+      ;;
+    m )
+      make_default=true
       ;;
     \? )
       echo "Invalid option: $OPTARG" 1>&2
@@ -78,5 +83,15 @@ for template_name in "${template_array[@]}"; do
     
     # Print the new version number
     echo "New version created: $version_number for Launch template $template_name."
+    
+    # Make the new version the default if the -m flag was provided
+    if [ "$make_default" = true ]; then
+      if [ -n "$profile" ]; then
+        aws ec2 modify-launch-template --region "$region" --launch-template-id "$template_id" --default-version "$version_number" --profile "$profile"
+      else
+        aws ec2 modify-launch-template --region "$region" --launch-template-id "$template_id" --default-version "$version_number"
+      fi
+      echo "Version $version_number is now the default version for Launch template $template_name."
+    fi
   fi
 done

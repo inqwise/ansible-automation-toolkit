@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+PYTHON_BIN=python3
+MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh"
+
 REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p');
 echo "region:$REGION"
 
@@ -29,14 +33,15 @@ catch_error () {
     echo "An error occurred in goldenimage_script: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
+
 main () {
     set -euo pipefail
     echo "Start goldenimage_script_amzn2023.sh"
     sudo mkdir /deployment
     sudo chown -R $USER: /deployment
-    python3 -m venv /deployment/ansibleenv
+    $PYTHON_BIN -m venv /deployment/ansibleenv
     source /deployment/ansibleenv/bin/activate
-    aws s3 cp $GET_PIP_URL - | python3
+    aws s3 cp $GET_PIP_URL - | $PYTHON_BIN
     echo "download playbook"
     mkdir /deployment/playbook
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /deployment/playbook --recursive --region $REGION --exclude '.*' --exclude '*/.*'
@@ -45,15 +50,14 @@ main () {
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then
     echo "Local main.sh not found. Download main.sh script from URL..."
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh -o main.sh
+    curl -s $MAIN_SCRIPT_URL -o main.sh
     fi
     bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags "installation"
     rm vault_password
     # create empty tiles
     > requirements.txt
-    > requirements.yml
-    [ -f requirements_extra.yml ] && rm requirements_extra.yml 
     echo "End goldenimage_script"
 }
+
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1

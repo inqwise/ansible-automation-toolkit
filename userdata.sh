@@ -33,7 +33,7 @@ main () {
     export ANSIBLE_VERBOSITY=0
     export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
     echo "$VAULT_PASSWORD" > vault_password
-    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags configuration
+    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags configuration --offline
     rm vault_password
 }
 trap 'catch_error "$ERROR"' ERR
