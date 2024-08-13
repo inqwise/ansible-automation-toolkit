@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-#start main.sh localy:
-#curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r eu-west-1 -e "playbook_name=ansible-elasticsearch es_discovery_cluster=pension-test discord_message_owner_name=terra" --topic-name pre_playbook_errors --account-id 339712742264
 REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p');
 echo "region:$REGION"
 
@@ -33,21 +31,23 @@ catch_error () {
 }
 main () {
     set -euo pipefail
-    echo "Start goldenimage_script.sh"
-    python3 -m venv /tmp/ansibleenv
-    source /tmp/ansibleenv/bin/activate
+    echo "Start goldenimage_script_amzn2023.sh"
+    sudo mkdir /deployment
+    sudo chown -R $USER: /deployment
+    python3 -m venv /deployment/ansibleenv
+    source /deployment/ansibleenv/bin/activate
     aws s3 cp $GET_PIP_URL - | python3
     echo "download playbook"
-    mkdir /tmp/deployment
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /tmp/deployment --recursive --region $REGION --exclude '.*' --exclude '*/.*'
-    chmod -R 755 /tmp/deployment
-    cd /tmp/deployment
+    mkdir /deployment/playbook
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /deployment/playbook --recursive --region $REGION --exclude '.*' --exclude '*/.*'
+    chmod -R 755 /deployment/playbook
+    cd /deployment/playbook
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then
     echo "Local main.sh not found. Download main.sh script from URL..."
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh -o main.sh
     fi
-    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME discord_message_owner_name=goldenimage" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID
+    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags "installation"
     rm vault_password
     # create empty tiles
     > requirements.txt

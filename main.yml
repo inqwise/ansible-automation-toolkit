@@ -4,37 +4,40 @@
 
   collections:
     - inqwise.common
-      
+
   vars_files:
     - defaults.yml
 
   tasks:
   - block:
   
-    - name: install mc
+    - name: Install mc
       ansible.builtin.package:
         name:
           - 'mc'
         state: present
       tags: installation  
 
-    - name: include main vars
-      include_vars:
+    - name: Include main vars
+      ansible.builtin.include_vars:
         dir: vars/main
         files_matching: "{{ private_domain }}.yml"
+      tags: always
 
-    - name: include credentials vars
-      include_vars:
+    - name: Include credentials vars
+      ansible.builtin.include_vars:
         dir: vars/credentials
         files_matching: "{{ private_domain }}.yml"
+      tags: always
 
-    - name: include users and groups vars
-      include_vars:
+    - name: Include users and groups vars
+      ansible.builtin.include_vars:
         file: access.yml
         name: access
+      tags: always
 
     - name: add groups to access
-      set_fact:
+      ansible.builtin.set_fact:
         access: >-
           {{
             access | combine({
@@ -42,9 +45,10 @@
             })
           }}
       when: users_groups is defined
+      tags: always
 
-    - name: add users to access
-      set_fact:
+    - name: Add users to access
+      ansible.builtin.set_fact:
         access: >-
           {{
             access | combine({
@@ -52,39 +56,55 @@
             })
           }}
       when: users is defined
+      tags: always
 
-    - name: debuging users
+    - name: Debuging users
       ansible.builtin.debug:
         var: users
         verbosity: 1
       tags: debug
 
-    - include_role:
+    - name: Users and Groups
+      ansible.builtin.include_role:
         name: users
       vars:
         users_groups: "{{ access.users_groups }}"
         users: "{{ access.users }}"
+      tags: 
+        - installation
+        - configuration
 
-    - include_role:
+    - name: Telegraf
+      ansible.builtin.include_role:
         name: telegraf
       vars:
         telegraf_agent_hostname: "{{ ansible_fqdn }}"
         telegraf_agent_external_interval: True
       when: telegraf_config_uri is defined
-      
-    - name: stuff
+      tags: 
+        - installation
+        - configuration
+
+    - name: Stuff
       import_tasks: stuff.yml
         
-    - name: send success message
-      include_role:
+    - name: Send success message
+      ansible.builtin.include_role:
         name: discord
+        apply:
+          tags: configuration
+      tags: configuration
       
     rescue:
-      - name: send fail message
-        include_role:
+      - name: Send fail message
+        ansible.builtin.include_role:
           name: discord
+          apply:
+            tags: configuration
+        tags: configuration
       
       - name: re-raise the error
-        fail:
+        ansible.builtin.fail:
           msg: "{{ ansible_failed_result.msg | default(ansible_failed_result | to_json) }}"
         when: ansible_failed_result is defined
+        tags: always
