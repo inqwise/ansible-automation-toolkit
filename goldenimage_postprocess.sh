@@ -5,7 +5,7 @@ manifest_file="manifest.json"
 # Output file path
 output_file="goldenimage_result.json"
 # Local script file
-local_script="update_ami_temp.sh"
+local_script="update_ami-test.sh"
 # Remote script URL
 remote_script_url="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/update_ami.sh"
 

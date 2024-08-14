@@ -45,7 +45,7 @@ main () {
     echo "Local main.sh not found. Download main.sh script from URL..."
     curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh -o main.sh
     fi
-    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME discord_message_owner_name=goldenimage" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID
+    bash main.sh -e "playbook_name=$PLAYBOOK_NAME discord_message_owner_name=goldenimage" $ACCOUNT_ID
     rm vault_password
     echo "End user data"
 }
