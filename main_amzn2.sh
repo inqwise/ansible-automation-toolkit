@@ -54,7 +54,7 @@ fi
 
 set -euo pipefail
 echo "start main_amzn2.sh"
-[ -f "requirements.txt" ] && pip3.8 install -r requirements.txt || pip3.8 install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements.txt
+[ -f "requirements.txt" ] && pip install -r requirements.txt || pip install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements.txt
 
 if [ ! -f "requirements.yml" ]; then
     echo "Local requirements.yml not found. Downloading from URL..."

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-#start main.sh localy:
-#curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/master/main_amzn2023.sh | bash -s -- -r eu-west-1 -e "playbook_name=ansible-elasticsearch es_discovery_cluster=pension-test discord_message_owner_name=terra" --topic-name pre_playbook_errors --account-id 339712742264
+PYTHON_BIN=python3
+MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh"
+
 REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p');
 echo "region:$REGION"
 
@@ -28,24 +29,28 @@ VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --
 
 catch_error () {
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    echo "An error occurred in userdata: $1"
+    echo "An error occurred in userdata_amzn2023: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
 main () {
     set -euo pipefail
     echo "Start userdata_amzn2023.sh"
-    python3 -m venv /tmp/ansibleenv
-    source /tmp/ansibleenv/bin/activate
-    aws s3 cp $GET_PIP_URL - | python3
+    sudo mkdir /deployment
+    sudo chown -R $(whoami): /deployment
+    $PYTHON_BIN -m venv /deployment/ansibleenv
+    source /deployment/ansibleenv/bin/activate
+    aws s3 cp $GET_PIP_URL - | $PYTHON_BIN
     echo "download playbook"
-    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /tmp/$PLAYBOOK_NAME --recursive --region $REGION --exclude '.*' --exclude '*/.*'
-    cd /tmp/$PLAYBOOK_NAME
+    mkdir /deployment/playbook
+    aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /deployment/playbook --recursive --region $REGION --exclude '.*' --exclude '*/.*'
+    chmod -R 755 /deployment/playbook
+    cd /deployment/playbook
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then
     echo "Local main.sh not found. Download main.sh script from URL..."
-    curl -s https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh -o main.sh
+    curl -s $MAIN_SCRIPT_URL -o main.sh
     fi
-    bash main.sh -e "playbook_name=$PLAYBOOK_NAME discord_message_owner_name=goldenimage" $ACCOUNT_ID
+    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME"
     rm vault_password
     echo "End user data"
 }

@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 PYTHON_BIN=python3
 MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh"
 
@@ -33,12 +32,11 @@ catch_error () {
     echo "An error occurred in goldenimage_script: $1"
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
 }
-
 main () {
     set -euo pipefail
     echo "Start goldenimage_script_amzn2023.sh"
     sudo mkdir /deployment
-    sudo chown -R $USER: /deployment
+    sudo chown -R $(whoami): /deployment
     $PYTHON_BIN -m venv /deployment/ansibleenv
     source /deployment/ansibleenv/bin/activate
     aws s3 cp $GET_PIP_URL - | $PYTHON_BIN
@@ -52,9 +50,11 @@ main () {
     echo "Local main.sh not found. Download main.sh script from URL..."
     curl -s $MAIN_SCRIPT_URL -o main.sh
     fi
-    bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation"
+    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags "installation"
     rm vault_password
-    echo "End goldenimage_script"
+    # create empty tiles
+    > requirements.txt
+    echo "End goldenimage_script_amzn2023"
 }
 
 trap 'catch_error "$ERROR"' ERR
