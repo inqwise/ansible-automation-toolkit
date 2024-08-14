@@ -1,18 +1,24 @@
 #!/bin/bash
 
+SKIP_TAGS=""
+TAGS=""
+EXTRA=""
 OFFLINE=false
 TEST_MODE=false
 PIP_COMMAND="pip"
 
 usage() {
-    echo "Usage: $0 [--offline] [--test]"
+    echo "Usage: $0 [-e <extra>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline] [--test]"
     exit 1
 }
 
-while getopts ":-:" option; do
+while getopts ":e:-:" option; do
   case "${option}" in
+    e) EXTRA="${OPTARG}";;
     -)
       case "${OPTARG}" in
+        skip-tags) SKIP_TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         offline) OFFLINE=true;;
         test) TEST_MODE=true;;
         *) echo "Invalid option --${OPTARG}"; usage;;
@@ -57,21 +63,29 @@ if [ ! -f "$REQUIREMENTS_YML" ]; then
     fi
 fi
 
-GALAXY_COMMAND="ansible-galaxy install"
+GALAXY_ROLE_COMMAND="ansible-galaxy role install"
+GALAXY_COLLECTION_COMMAND="ansible-galaxy collection install"
 
 if [ "$OFFLINE" = true ]; then
-    GALAXY_COMMAND="$GALAXY_COMMAND --ignore-errors"
+    GALAXY_ROLE_COMMAND="$GALAXY_ROLE_COMMAND --ignore-errors"
+    GALAXY_COLLECTION_COMMAND="$GALAXY_COLLECTION_COMMAND --ignore-errors"
 fi
 
-$GALAXY_COMMAND -r $REQUIREMENTS_YML
+$GALAXY_ROLE_COMMAND -r $REQUIREMENTS_YML -p roles
+$GALAXY_COLLECTION_COMMAND -r $REQUIREMENTS_YML -p ./collections
 
 if [ -f "requirements_extra.yml" ]; then
     echo "Found requirements_extra.yml ..."
-    $GALAXY_COMMAND -r $REQUIREMENTS_YML
+    $GALAXY_ROLE_COMMAND -r requirements_extra.yml -p roles
+    $GALAXY_COLLECTION_COMMAND -r requirements_extra.yml -p ./collections
 fi
 
+[[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
+[[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
+[[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
+
 ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/access.yml"
-COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 $MAIN_YML --vault-password-file vault_password"
+COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 $MAIN_YML ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
 PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main.yml"
 
 if [ ! -f "vars/access.yml" ]; then

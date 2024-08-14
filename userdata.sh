@@ -33,8 +33,9 @@ main () {
     export ANSIBLE_VERBOSITY=0
     export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
     echo "$VAULT_PASSWORD" > vault_password
-    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags configuration --offline
+    ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml --vault-password-file vault_password -e "playbook_name=$PLAYBOOK_NAME" --tags configuration
     rm vault_password
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1
+
