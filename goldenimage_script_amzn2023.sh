@@ -54,8 +54,6 @@ main () {
     fi
     bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags "installation"
     rm vault_password
-    # create empty tiles
-    > requirements.txt
     echo "End goldenimage_script"
 }
 
