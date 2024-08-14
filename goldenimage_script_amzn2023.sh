@@ -50,7 +50,7 @@ main () {
     echo "Local main.sh not found. Download main.sh script from URL..."
     curl -s $MAIN_SCRIPT_URL -o main.sh
     fi
-    bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME" --topic-name $TOPIC_NAME --account-id $ACCOUNT_ID --tags "installation"
+    bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation"
     rm vault_password
     # create empty tiles
     > requirements.txt
