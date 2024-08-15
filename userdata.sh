@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+VAULT_PASSWORD_FILE="vault_password"
+
 REGION=$(ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p');
 echo "region:$REGION"
 
@@ -21,10 +23,18 @@ echo "Topic Name: $TOPIC_NAME"
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
 
+cleanup() {
+    if [ -f "$VAULT_PASSWORD_FILE" ]; then
+        rm -f "$VAULT_PASSWORD_FILE"
+        echo "vault_password file removed."
+    fi
+}
+
 catch_error () {
-    echo "An error occurred in userdata: $1"
+    echo "An error occurred in userdata: '$1'"
     INSTANCE_ID=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
     aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$INSTANCE_ID" --region $REGION
+    cleanup
 }
 main () {
     set -euo pipefail
@@ -34,7 +44,7 @@ main () {
     export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
     echo "$VAULT_PASSWORD" > vault_password
     ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml --vault-password-file vault_password -e "playbook_name=$PLAYBOOK_NAME" --tags configuration
-    rm vault_password
+    cleanup
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1
