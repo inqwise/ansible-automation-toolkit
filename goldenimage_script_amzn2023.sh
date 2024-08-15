@@ -23,7 +23,7 @@ get_parameter() {
 }
 
 identify_os() {
-    if [ -z "$OS_FAMILY" ]; then
+    if [ -z "${OS_FAMILY:-}" ]; then
         echo "OS_FAMILY is not defined."
         if [ -f "$LOCAL_IDENTIFY_OS_SCRIPT" ]; then
             echo "Executing local identify_os.sh..."
