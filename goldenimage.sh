@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
 # Constants
-PYTHON_BIN=python3
-MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh"
 LOCAL_IDENTIFY_OS_SCRIPT="identify_os.sh"
 REMOTE_IDENTIFY_OS_SCRIPT="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/identify_os.sh"
 SECRET_NAME="vault_secret"
@@ -33,6 +31,8 @@ get_parameter() {
 }
 
 # Global Variables
+PYTHON_BIN=python3
+MAIN_SCRIPT_URL=""
 REGION=$(get_region)
 echo "region: $REGION"
 ACCOUNT_ID=$(get_account_id)
@@ -101,6 +101,8 @@ setup_environment() {
         PYTHON_BIN="python3.8"
         MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2.sh"
         sudo yum -y erase python3 && sudo amazon-linux-extras install $PYTHON_BIN
+    else
+        MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2023.sh"
     fi
 
     $PYTHON_BIN -m venv /deployment/ansibleenv
