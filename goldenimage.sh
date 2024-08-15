@@ -42,6 +42,7 @@ TOPIC_NAME=$(echo "$PARAMETER" | grep 'topic_name' | awk '{print $2}')
 echo "topic: $TOPIC_NAME"
 
 identify_os() {
+    echo 'identify_os'
     if [ -z "${OS_FAMILY:-}" ]; then
         echo "OS_FAMILY is not defined."
         if [ -f "$LOCAL_IDENTIFY_OS_SCRIPT" ]; then
@@ -49,8 +50,8 @@ identify_os() {
             source "$LOCAL_IDENTIFY_OS_SCRIPT"
         else
             echo "Local identify_os.sh not found. Executing from remote URL..."
-            curl -s "$REMOTE_IDENTIFY_OS_SCRIPT" | bash
-        fi  
+            source <(curl -s "$REMOTE_IDENTIFY_OS_SCRIPT")
+        fi
     fi
 }
 
