@@ -99,6 +99,7 @@ setup_environment() {
     if [[ "$OS_FAMILY" == "amzn" && "$OS_VERSION" -eq 2 ]]; then
         echo 'amzn2 tweaks'
         PYTHON_BIN="python3.8"
+        MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main_amzn2.sh"
         sudo yum -y erase python3 && sudo amazon-linux-extras install $PYTHON_BIN
     fi
 
