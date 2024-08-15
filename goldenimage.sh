@@ -131,7 +131,7 @@ download_playbook() {
     if aws s3 ls "$s3_folder" --region $REGION >/dev/null 2>&1; then
         echo "download playbook '$s3_folder'"
         mkdir "$local_folder" 
-        aws s3 cp "s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
+        aws s3 cp "$s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
         chmod -R 755 "$local_folder"
     else
         echo "S3 folder '$s3_folder' does not exist. Exiting." >&2
