@@ -43,7 +43,6 @@ main () {
     echo "download playbook"
     mkdir /deployment/playbook
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /deployment/playbook --recursive --region $REGION --exclude '.*' --exclude '*/.*'
-    chmod -R 755 /deployment/playbook
     cd /deployment/playbook
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then

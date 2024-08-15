@@ -99,7 +99,7 @@ setup_environment() {
     if [[ "$OS_FAMILY" == "amzn" && "$OS_VERSION" -eq 2 ]]; then
         echo 'amzn2 tweaks'
         PYTHON_BIN="python3.8"
-        yum -y erase python3 && amazon-linux-extras install $PYTHON_BIN
+        sudo yum -y erase python3 && sudo amazon-linux-extras install $PYTHON_BIN
     fi
 
     $PYTHON_BIN -m venv /deployment/ansibleenv
@@ -125,12 +125,12 @@ download_playbook() {
     local base_url=$1
     local name=$2
     local local_folder=$3
-    local s3_folder="$base_url/$name/$PLAYBOOK_VERSION/"
-
-    if aws s3 ls "$s3_folder" >/dev/null 2>&1; then
+    local s3_folder="$base_url/$name/$PLAYBOOK_VERSION"
+    
+    if aws s3 ls "$s3_folder" --region $REGION >/dev/null 2>&1; then
         echo "download playbook '$s3_folder'"
         mkdir "$local_folder" 
-        aws s3 cp "$base_url/$name/$PLAYBOOK_VERSION/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
+        aws s3 cp "s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
         chmod -R 755 "$local_folder"
     else
         echo "S3 folder '$s3_folder' does not exist. Exiting." >&2
