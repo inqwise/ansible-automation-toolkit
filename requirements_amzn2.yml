@@ -4,5 +4,7 @@ roles:
     src: https://github.com/robertdebock/ansible-role-users/archive/refs/tags/5.6.0.tar.gz
 
 collections:
+  - source: ./collections/ansible_collections/
+    type: subdirs
   - source: ./inqwise/
     type: subdirs

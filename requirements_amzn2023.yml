@@ -4,5 +4,7 @@ roles:
     src: robertdebock.users
 
 collections:
+  - source: ./collections/ansible_collections/
+    type: subdirs
   - source: ./inqwise/
     type: subdirs
