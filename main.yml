@@ -67,6 +67,10 @@
     - name: Users and Groups
       ansible.builtin.include_role:
         name: users
+        apply:
+          tags: 
+            - installation
+            - configuration
       vars:
         users_groups: "{{ access.users_groups }}"
         users: "{{ access.users }}"
