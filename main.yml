@@ -1,4 +1,4 @@
-- name: "{{ playbook_name }}"
+- name: "{{ playbook_name | default('inqwise automation toolkit playbook') }}"
   hosts: all
   become: yes  # Use sudo to execute tasks
 
