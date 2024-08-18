@@ -35,19 +35,23 @@ catch_error () {
 main () {
     set -euo pipefail
     echo "Start userdata_amzn2023.sh"
-    sudo mkdir /deployment
+    if [ ! -d "/deployment" ]; then
+        sudo mkdir /deployment
+    fi
     sudo chown -R $(whoami): /deployment
     $PYTHON_BIN -m venv /deployment/ansibleenv
     source /deployment/ansibleenv/bin/activate
     aws s3 cp $GET_PIP_URL - | $PYTHON_BIN
     echo "download playbook"
-    mkdir /deployment/playbook
+    if [ ! -d "/deployment/playbook" ]; then
+        mkdir -p /deployment/playbook
+    fi
     aws s3 cp $PLAYBOOK_BASE_URL/$PLAYBOOK_NAME/latest/ /deployment/playbook --recursive --region $REGION --exclude '.*' --exclude '*/.*'
     cd /deployment/playbook
     echo "$VAULT_PASSWORD" > vault_password
     if [ ! -f "main.sh" ]; then
-    echo "Local main.sh not found. Download main.sh script from URL..."
-    curl -s $MAIN_SCRIPT_URL -o main.sh
+        echo "Local main.sh not found. Download main.sh script from URL..."
+        curl -s $MAIN_SCRIPT_URL -o main.sh
     fi
     bash main.sh -r $REGION -e "playbook_name=$PLAYBOOK_NAME"
     rm vault_password
