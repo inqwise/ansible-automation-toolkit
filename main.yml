@@ -90,8 +90,23 @@
         - configuration
 
     - name: Stuff
-      import_tasks: stuff.yml
-        
+      ansible.builtin.import_tasks: stuff.yml
+    
+    - name: Flush
+      ansible.builtin.include_role: 
+        name: flush_handlers
+        apply:
+          tags: configuration
+      tags: configuration
+    
+    - name: Notify AWS postactions
+      debug: 
+        msg: aws postactions
+      changed_when: yes
+      notify: "aws postactions"
+      when: notify_aws_postactions | default(false)
+      tags: configuration
+
     - name: Send success message
       ansible.builtin.include_role:
         name: discord
