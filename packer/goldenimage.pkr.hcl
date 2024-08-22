@@ -158,7 +158,7 @@ build {
   }
 
   source "source.amazon-ebs.common" {
-    name = "amzn2_x64"
+    name = "amzn2_x86"
     source_ami_filter {
       filters={
         name                = "amzn2-ami-kernel-5.*-x86_64-gp2"
