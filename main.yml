@@ -72,8 +72,10 @@
             - installation
             - configuration
       vars:
-        users_groups: "{{ access.users_groups }}"
-        users: "{{ access.users }}"
+        users_groups: &groups "{{ access.users_groups }}"
+        users: &users "{{ access.users }}"
+        users_group_list: *groups
+        users_user_list: *users
       tags: 
         - installation
         - configuration
