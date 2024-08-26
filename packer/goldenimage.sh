@@ -1,11 +1,45 @@
 #!/usr/bin/env bash
-
 # Constants
 LOCAL_IDENTIFY_OS_SCRIPT="identify_os.sh"
 REMOTE_IDENTIFY_OS_SCRIPT="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/identify_os.sh"
-SECRET_NAME="vault_secret"
 VAULT_PASSWORD_FILE="vault_password"
+PIP_COMMAND="pip"
+
+GET_PIP_URL="https://bootstrap.pypa.io/get-pip.py"
 PLAYBOOK_VERSION="latest"
+REGION=""
+PLAYBOOK_NAME=""
+PLAYBOOK_BASE_URL=""
+VAULT_PASSWORD=""
+
+usage() {
+    echo "Usage: $0 [--token <token>] [--get_pip_url <url>] [--playbook_name <name>] [--playbook_base_url <url>] [-r <name>] [--account_id <name>] [--topic_name <name>] [--vault_password <name>] [--playbook_version <name>]"
+    exit 1
+}
+
+while getopts ":r:-:" option; do
+  case "${option}" in
+    r) REGION=${OPTARG};;
+    -)
+      case "${OPTARG}" in
+        get_pip_url) GET_PIP_URL="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        playbook_name) PLAYBOOK_NAME="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        playbook_base_url) PLAYBOOK_BASE_URL="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        vault_password) VAULT_PASSWORD="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        playbook_version) PLAYBOOK_VERSION="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        *) echo "Invalid option --${OPTARG}"; usage;;
+      esac
+      ;;
+    \?) echo "Invalid option: -${OPTARG}" >&2; usage;;
+    :) echo "Option -${OPTARG} requires an argument." >&2; usage;;
+  esac
+done
+
+if [ -z "$REGION" ] || [ -z "$PLAYBOOK_NAME" ] || [ -z "$PLAYBOOK_BASE_URL" ] || [ -z "$VAULT_PASSWORD" ]; then
+  echo "Error: One of the variables is mandatory."
+  usage
+  exit 1
+fi
 
 # Functions
 assert_var() {
@@ -17,29 +51,9 @@ assert_var() {
     fi
 }
 
-get_region() {
-    ec2-metadata --availability-zone | sed -n 's/.*placement: \([a-zA-Z-]*[0-9]\).*/\1/p'
-}
-
-get_account_id() {
-    aws sts get-caller-identity --query "Account" --output text
-}
-
-get_parameter() {
-    local name=$1
-    aws ssm get-parameter --name "$name" --query "Parameter.Value" --output text --region "$REGION"
-}
-
 # Global Variables
 PYTHON_BIN=python3
 MAIN_SCRIPT_URL=""
-REGION=$(get_region)
-echo "region: $REGION"
-ACCOUNT_ID=$(get_account_id)
-echo "account: $ACCOUNT_ID"
-PARAMETER=$(get_parameter "UserDataYAMLConfig")
-TOPIC_NAME=$(echo "$PARAMETER" | grep 'topic_name' | awk '{print $2}')
-echo "topic: $TOPIC_NAME"
 
 identify_os() {
     echo 'identify_os'
@@ -55,28 +69,6 @@ identify_os() {
     fi
 }
 
-get_metadata_token() {
-    curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600"
-}
-
-get_instance_tags() {
-    local token=$1
-    local tag=$2
-    local url="http://169.254.169.254/latest/meta-data/tags/instance/$tag"
-
-    # Perform the curl request and capture the output and the HTTP status code
-    response=$(curl -s -o /dev/null -w "%{http_code}" -H "X-aws-ec2-metadata-token: $token" "$url")
-
-    # Check if the status code is 200
-    if [[ "$response" -eq 200 ]]; then
-        # If 200, fetch the actual tag value
-        curl -s -H "X-aws-ec2-metadata-token: $token" "$url"
-    else
-        echo "Error: Failed to retrieve instance tag $tag. HTTP status code: $response" >&2
-        exit 1
-    fi
-}
-
 cleanup() {
     if [ -f "$VAULT_PASSWORD_FILE" ]; then
         rm -f "$VAULT_PASSWORD_FILE"
@@ -87,8 +79,6 @@ cleanup() {
 catch_error() {
     echo "An error occurred in goldenimage_script: '$1'"
     cleanup
-    local instance_id=$(ec2-metadata --instance-id | sed -n 's/.*instance-id: \(i-[a-f0-9]\{17\}\).*/\1/p')
-    aws sns publish --topic-arn "arn:aws:sns:$REGION:$ACCOUNT_ID:$TOPIC_NAME" --message "$1" --subject "$instance_id" --region "$REGION"
 }
 
 setup_environment() {
@@ -136,7 +126,7 @@ download_playbook() {
         aws s3 cp "$s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
         chmod -R 755 "$local_folder"
     else
-        echo "S3 folder '$s3_folder' does not exist. Exiting." >&2
+        echo "S3 folder $s3_folder does not exist. Exiting." >&2
         exit 1
     fi
 }
@@ -161,22 +151,13 @@ main() {
 
     identify_os
 
-    METADATA_TOKEN=$(get_metadata_token)
-    PLAYBOOK_NAME=$(get_instance_tags "$METADATA_TOKEN" playbook_name)
     echo "playbook_name: $PLAYBOOK_NAME"
-
-    GET_PIP_URL=$(echo "$PARAMETER" | grep 'get_pip_url' | awk '{print $2}')
-    echo "Get Pip URL: $GET_PIP_URL"
-
-    PLAYBOOK_BASE_URL=$(echo "$PARAMETER" | grep 'playbook_base_url' | awk '{print $2}')
-    echo "Playbook Base URL: $PLAYBOOK_BASE_URL"
-
-    VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id "$SECRET_NAME" --region "$REGION" --query 'SecretString' --output text)
 
     assert_var "PLAYBOOK_NAME" "$PLAYBOOK_NAME"
     assert_var "PLAYBOOK_BASE_URL" "$PLAYBOOK_BASE_URL"
     assert_var "VAULT_PASSWORD" "$VAULT_PASSWORD"
     assert_var "GET_PIP_URL" "$GET_PIP_URL"
+    assert_var "REGION" "$REGION"
 
     setup_environment
     install_pip "$GET_PIP_URL"
@@ -185,9 +166,5 @@ main() {
 
     echo "End goldenimage.sh"
 }
-
-# Trap errors and execute the catch_error function
-trap 'catch_error "$ERROR"' ERR
-
 # Execute the main function and capture errors
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1

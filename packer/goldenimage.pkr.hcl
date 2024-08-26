@@ -73,7 +73,7 @@ locals {
   common_build_settings = {
     shell_provisioners = {
         inline = !fileexists("goldenimage-test.sh") ? [
-        "curl --connect-timeout 2.37 -m 20 -o /tmp/goldenimage.sh https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/packer/goldenimage.sh && bash /tmp/goldenimage.sh --tags installation",
+        "curl --connect-timeout 2.37 -m 20 -o /tmp/goldenimage-find.sh https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/packer/goldenimage-parameters-find.sh && bash /tmp/goldenimage-find.sh --tags installation",
         ] : [],
         scripts = fileexists("goldenimage-test.sh") ? [
             "goldenimage-test.sh"
