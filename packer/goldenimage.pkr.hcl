@@ -58,11 +58,22 @@ variable "app" {
   type    = string
 }
 
-
+variable "toolkit_version" {
+  description = "automation toolkit repository release version. for example 'v1'"
+  type    = string
+  default = "default"
+}
 
 ######## 
 
+data "amazon-secretsmanager" "vault_secret" {
+  name = "vault_secret"
+  region = "${var.aws_region}"
+  profile = "${var.aws_profile}"
+  
+}
 
+######## 
 
 locals {
   instance_types = {
@@ -70,14 +81,23 @@ locals {
     x86   = var.instance_type != "" ? var.instance_type : "t3.small"
   }
 
+  playbook_name = "ansible-${var.app}"
   common_build_settings = {
     shell_provisioners = {
         inline = !fileexists("goldenimage-test.sh") ? [
-        "curl --connect-timeout 2.37 -m 20 -o /tmp/goldenimage-find.sh https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/packer/goldenimage-parameters-find.sh && bash /tmp/goldenimage-find.sh --tags installation",
+        "curl --connect-timeout 2.37 -m 20 -o /tmp/goldenimage.sh https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${var.toolkit_version}/packer/goldenimage.sh",
+        "bash /tmp/goldenimage.sh",
         ] : [],
         scripts = fileexists("goldenimage-test.sh") ? [
             "goldenimage-test.sh"
         ] : []
+        environment_vars = [
+          "PLAYBOOK_NAME=${local.playbook_name}",
+          "PLAYBOOK_BASE_URL=${var.base_path}",
+          "REGION=${var.aws_region}",
+          "VAULT_PASSWORD=${data.amazon-secretsmanager.vault_secret.value}"
+        ]
+        
     }
     
     post_processors = {
@@ -132,7 +152,7 @@ source "amazon-ebs" "common" {
     app       = "${var.app}"
     version   = "${var.tag}"
     timestamp = "${local.timestamp}"
-    playbook_name = "ansible-${var.app}"
+    playbook_name = "${local.playbook_name}"
   }
 
   tags = {
@@ -173,6 +193,7 @@ build {
   provisioner "shell" {
     scripts = local.common_build_settings.shell_provisioners.scripts
     inline = local.common_build_settings.shell_provisioners.inline
+    environment_vars = local.common_build_settings.shell_provisioners.environment_vars
   }
 
   post-processor "manifest" {
