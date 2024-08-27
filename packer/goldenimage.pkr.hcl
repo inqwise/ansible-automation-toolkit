@@ -95,7 +95,8 @@ locals {
           "PLAYBOOK_NAME=${local.playbook_name}",
           "PLAYBOOK_BASE_URL=${var.base_path}",
           "REGION=${var.aws_region}",
-          "VAULT_PASSWORD=${data.amazon-secretsmanager.vault_secret.value}"
+          "VAULT_PASSWORD=${data.amazon-secretsmanager.vault_secret.value}",
+          "PLAYBOOK_VERSION=${var.tag}"
         ]
         
     }
