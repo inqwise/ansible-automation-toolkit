@@ -8,5 +8,4 @@ collections:
     type: subdirs
   - source: ./inqwise/
     type: subdirs
-  - name: inqwise.common 
-    source: https://github.com/inqwise/ansible-common-collection/releases/download/v1/inqwise-common-1.0.0.tar.gz
+  - name: https://github.com/inqwise/ansible-common-collection/releases/download/v1/inqwise-common-1.0.0.tar.gz
