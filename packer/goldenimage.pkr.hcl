@@ -64,6 +64,11 @@ variable "toolkit_version" {
   default = "default"
 }
 
+variable "verbose" {
+  type    = bool
+  default = false
+}
+
 ######## 
 
 data "amazon-secretsmanager" "vault_secret" {
@@ -97,7 +102,8 @@ locals {
           "REGION=${var.aws_region}",
           "VAULT_PASSWORD=${data.amazon-secretsmanager.vault_secret.value}",
           "PLAYBOOK_VERSION=${var.tag}",
-          "TOOLKIT_VERSION=${var.toolkit_version}"
+          "TOOLKIT_VERSION=${var.toolkit_version}",
+          "VERBOSE=${var.verbose}"
         ]
         
     }

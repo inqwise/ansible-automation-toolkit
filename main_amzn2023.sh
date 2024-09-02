@@ -6,9 +6,10 @@ EXTRA=""
 OFFLINE=false
 TEST_MODE=false
 PIP_COMMAND="pip"
+VERBOSE=false
 
 usage() {
-    echo "Usage: $0 [-e <extra>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline] [--test]"
+    echo "Usage: $0 [-e <extra>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline] [--test] [--verbose]"
     exit 1
 }
 
@@ -21,6 +22,7 @@ while getopts ":e:-:" option; do
         tags) TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
         offline) OFFLINE=true;;
         test) TEST_MODE=true;;
+        verbose) VERBOSE=true;;
         *) echo "Invalid option --${OPTARG}"; usage;;
       esac
       ;;
@@ -28,6 +30,10 @@ while getopts ":e:-:" option; do
     :) echo "Option -${OPTARG} requires an argument." >&2; usage;;
   esac
 done
+
+if [ "$VERBOSE" = true ]; then
+    set -x
+fi
 
 set -euo pipefail
 echo "start main_amzn2023.sh"

@@ -11,6 +11,7 @@ REGION="${REGION:-}"
 PLAYBOOK_NAME="${PLAYBOOK_NAME:-}"
 PLAYBOOK_BASE_URL="${PLAYBOOK_BASE_URL:-}"
 VAULT_PASSWORD="${VAULT_PASSWORD:-}"
+VERBOSE="${VERBOSE:-false}"
 
 usage() {
     echo "Usage: $0 -r <region> --playbook_name <name> --playbook_base_url <url> --vault_password <password> [options]"
@@ -28,6 +29,7 @@ usage() {
     echo "  --topic_name <name>           Specify the topic name."
     echo "  --playbook_version <version>  Specify the playbook version."
     echo "  --toolkit_version <version>   Specify the toolkit version."
+    echo "  --verbose                     Enable verbose mode."
     exit 1
 }
 
@@ -55,6 +57,9 @@ while getopts ":r:-:" option; do
           ;;
         toolkit_version)
           TOOLKIT_VERSION="${!OPTIND}"; OPTIND=$((OPTIND + 1))
+          ;;
+        verbose)
+          VERBOSE=true
           ;;
         *)
           echo "Invalid option --${OPTARG}"
@@ -93,12 +98,16 @@ if [ -z "$VAULT_PASSWORD" ]; then
   usage
 fi
 
+if [ "$VERBOSE" = true ]; then
+    set -x
+fi
+
 # Functions
 assert_var() {
     local var_name="$1"
     local var_value="$2"
     if [ -z "$var_value" ]; then
-        echo "Error: $var_name is not set." >&2
+        echo "Error: $var_name is not set." 1>&2
         exit 1
     fi
 }
@@ -162,7 +171,7 @@ install_pip() {
         echo "Downloading get-pip via HTTP..."
         curl -s "$url" | $PYTHON_BIN
     else
-        echo "Unsupported URL scheme: $url" >&2
+        echo "Unsupported URL scheme: $url" 1>&2
         exit 1
     fi
 }
@@ -180,7 +189,7 @@ download_playbook() {
         aws s3 cp "$s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
         chmod -R 755 "$local_folder"
     else
-        echo "S3 folder $s3_folder does not exist. Exiting." >&2
+        echo "S3 folder $s3_folder does not exist. Exiting." 1>&2
         exit 1
     fi
 }
@@ -195,7 +204,13 @@ run_main_script() {
         curl -s "$MAIN_SCRIPT_URL" -o main.sh
     fi
     
-    bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation"
+    # Construct the command with verbose option if enabled
+    if [ "$VERBOSE" = true ]; then
+        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --verbose
+    else
+        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation"
+    fi
+
     cleanup
 }
 
