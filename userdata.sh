@@ -48,4 +48,3 @@ main () {
 }
 trap 'catch_error "$ERROR"' ERR
 { ERROR=$(main 2>&1 1>&$out); } {out}>&1
-
