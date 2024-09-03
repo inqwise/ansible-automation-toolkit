@@ -108,6 +108,7 @@ assert_var() {
     local var_value="$2"
     if [ -z "$var_value" ]; then
         echo "Error: $var_name is not set." 1>&2
+        echo "Error: $var_name is not set."
         exit 1
     fi
 }
@@ -172,6 +173,7 @@ install_pip() {
         curl -s "$url" | $PYTHON_BIN
     else
         echo "Unsupported URL scheme: $url" 1>&2
+        echo "Unsupported URL scheme: $url"
         exit 1
     fi
 }
@@ -190,6 +192,7 @@ download_playbook() {
         chmod -R 755 "$local_folder"
     else
         echo "S3 folder $s3_folder does not exist. Exiting." 1>&2
+        echo "S3 folder $s3_folder does not exist. Exiting."
         exit 1
     fi
 }
