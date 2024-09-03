@@ -107,8 +107,6 @@ if [ ! -f "vars/access.yml" ]; then
     if [ "$OFFLINE" = true ]; then
         echo "vars/access.yml not found locally and cannot be downloaded in offline mode."
         exit 1
-    elif [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
-        echo "Skipping download of vars/access.yml as per --skip-remote-requirements."
     else
         echo "Local vars/access.yml not found. Downloading from URL..."
         curl $ACCESS_URL -o vars/access.yml
@@ -119,8 +117,6 @@ if [ ! -f "$MAIN_YML" ]; then
     if [ "$OFFLINE" = true ]; then
         echo "$MAIN_YML not found locally and cannot be downloaded in offline mode."
         exit 1
-    elif [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
-        echo "Skipping download of $MAIN_YML as per --skip-remote-requirements."
     else
         echo "Local $MAIN_YML not found. Downloading from URL..."
         curl -O $PLAYBOOK_URL
