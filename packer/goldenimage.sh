@@ -31,7 +31,7 @@ usage() {
     echo "  --playbook_version <version>  Specify the playbook version."
     echo "  --toolkit_version <version>   Specify the toolkit version."
     echo "  --verbose                     Enable verbose mode."
-    echo "  --skip_remote_requirements    Skip downloading remote requirements."
+    echo "  --skip-remote-requirements    Skip downloading remote requirements."
     exit 1
 }
 
@@ -63,7 +63,7 @@ while getopts ":r:-:" option; do
         verbose)
           VERBOSE=true
           ;;
-        skip_remote_requirements)
+        skip-remote-requirements)
           SKIP_REMOTE_REQUIREMENTS=true
           ;;
         *)
@@ -158,91 +158,4 @@ setup_environment() {
         echo 'amzn2 tweaks'
         PYTHON_BIN="python3.8"
         MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/main_amzn2.sh"
-        sudo yum -y erase python3 && sudo amazon-linux-extras install $PYTHON_BIN
-    else
-        MAIN_SCRIPT_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/main_amzn2023.sh"
-    fi
-
-    $PYTHON_BIN -m venv /deployment/ansibleenv
-    source /deployment/ansibleenv/bin/activate
-}
-
-install_pip() {
-    echo 'install_pip'
-    local url=$1
-    if [[ $url == s3://* ]]; then
-        echo "Downloading get-pip from S3..."
-        aws s3 cp "$url" - | $PYTHON_BIN
-    elif [[ $url == http*://* ]]; then
-        echo "Downloading get-pip via HTTP..."
-        curl -s "$url" | $PYTHON_BIN
-    else
-        echo "Unsupported URL scheme: $url" 1>&2
-        echo "Unsupported URL scheme: $url"
-        exit 1
-    fi
-}
-
-download_playbook() {
-    local base_url=$1
-    local name=$2
-    local local_folder=$3
-    local version=$PLAYBOOK_VERSION
-    local s3_folder="$base_url/$name/$version"
-    
-    if aws s3 ls "$s3_folder" --region $REGION >/dev/null 2>&1; then
-        echo "download playbook '$s3_folder'"
-        mkdir "$local_folder" 
-        aws s3 cp "$s3_folder/" "$local_folder" --recursive --region "$REGION" --exclude '.*' --exclude '*/.*'
-        chmod -R 755 "$local_folder"
-    else
-        echo "S3 folder $s3_folder does not exist. Exiting." 1>&2
-        echo "S3 folder $s3_folder does not exist. Exiting."
-        exit 1
-    fi
-}
-
-run_main_script() {
-    echo 'run_main_script'
-    cd /deployment/playbook
-    echo "$VAULT_PASSWORD" > "$VAULT_PASSWORD_FILE"
-
-    if [ ! -f "main.sh" ]; then
-        echo "Local main.sh not found. Downloading main.sh script from URL..."
-        curl -s "$MAIN_SCRIPT_URL" -o main.sh
-    fi
-    
-    # Construct the command with verbose and SKIP_REMOTE_REQUIREMENTS options if enabled
-    if [ "$VERBOSE" = true ]; then
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --verbose --skip_remote_requirements="$SKIP_REMOTE_REQUIREMENTS"
-    else
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --skip_remote_requirements="$SKIP_REMOTE_REQUIREMENTS"
-    fi
-
-    cleanup
-}
-
-main() {
-    set -euo pipefail
-    echo "Start goldenimage.sh"
-
-    identify_os
-
-    echo "playbook_name: $PLAYBOOK_NAME"
-
-    assert_var "PLAYBOOK_NAME" "$PLAYBOOK_NAME"
-    assert_var "PLAYBOOK_BASE_URL" "$PLAYBOOK_BASE_URL"
-    assert_var "VAULT_PASSWORD" "$VAULT_PASSWORD"
-    assert_var "GET_PIP_URL" "$GET_PIP_URL"
-    assert_var "REGION" "$REGION"
-    assert_var "PLAYBOOK_VERSION" "$PLAYBOOK_VERSION"
-
-    setup_environment
-    install_pip "$GET_PIP_URL"
-    download_playbook "$PLAYBOOK_BASE_URL" "$PLAYBOOK_NAME" /deployment/playbook
-    run_main_script
-
-    echo "End goldenimage.sh"
-}
-# Execute the main function and capture errors
-{ ERROR=$(main 2>&1 1>&$out); } {out}>&1
+        sudo
