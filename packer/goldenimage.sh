@@ -209,12 +209,21 @@ run_main_script() {
         curl -s "$MAIN_SCRIPT_URL" -o main.sh
     fi
     
-    # Construct the command with verbose and SKIP_REMOTE_REQUIREMENTS options if enabled
+    # Initialize the command with required options
+    cmd="bash main.sh -e playbook_name=$PLAYBOOK_NAME --tags installation"
+    
+    # Add verbose option if enabled
     if [ "$VERBOSE" = true ]; then
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --verbose --skip-remote-requirements="$SKIP_REMOTE_REQUIREMENTS"
-    else
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --skip-remote-requirements="$SKIP_REMOTE_REQUIREMENTS"
+        cmd="$cmd --verbose"
     fi
+    
+    # Add --skip-remote-requirements if SKIP_REMOTE_REQUIREMENTS is true
+    if [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
+        cmd="$cmd --skip-remote-requirements"
+    fi
+    
+    # Execute the command
+    $cmd
 
     cleanup
 }
