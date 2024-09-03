@@ -80,6 +80,11 @@
         - installation
         - configuration
 
+    - name: Active interfaces role
+      ansible.builtin.import_role:
+        name: ansible_utils
+        tasks_from: active_interfaces
+
     - name: Telegraf
       ansible.builtin.include_role:
         name: telegraf
@@ -94,6 +99,14 @@
     - name: Stuff
       ansible.builtin.import_tasks: stuff.yml
     
+    - name: On terminate role
+      ansible.builtin.include_role:
+        name: on_terminate
+        apply:
+          tags: configuration
+      when: (on_terminate_script_contents is defined and on_terminate_script_contents | length > 0) or (on_terminate_script_paths is defined and on_terminate_script_paths | length > 0)
+      tags: configuration
+
     - name: Flush
       ansible.builtin.include_role: 
         name: flush_handlers
