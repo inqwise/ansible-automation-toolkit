@@ -7,9 +7,11 @@ OFFLINE=false
 TEST_MODE=false
 PIP_COMMAND="pip"
 VERBOSE=false
+TOOLKIT_VERSION="default"  # Default value for toolkit_version
+SKIP_REMOTE_REQUIREMENTS=false  # Default value for skipping remote requirements
 
 usage() {
-    echo "Usage: $0 [-e <extra>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline] [--test] [--verbose]"
+    echo "Usage: $0 [-e <extra>] [--skip-tags <skip-tags>] [--tags <tags>] [--offline] [--test] [--verbose] [--toolkit-version <version>] [--skip-remote-requirements]"
     exit 1
 }
 
@@ -23,6 +25,8 @@ while getopts ":e:-:" option; do
         offline) OFFLINE=true;;
         test) TEST_MODE=true;;
         verbose) VERBOSE=true;;
+        toolkit-version) TOOLKIT_VERSION="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
+        skip-remote-requirements) SKIP_REMOTE_REQUIREMENTS=true;;
         *) echo "Invalid option --${OPTARG}"; usage;;
       esac
       ;;
@@ -36,7 +40,10 @@ if [ "$VERBOSE" = true ]; then
 fi
 
 set -euo pipefail
-echo "start main_amzn2023.sh"
+echo "start main_amzn2023.sh with toolkit_version: ${TOOLKIT_VERSION}"
+
+# URL for requirements_amzn2023.yml
+REQUIREMENTS_YML_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/requirements_amzn2023.yml"
 
 # Modify file names if TEST_MODE is enabled
 if [ "$TEST_MODE" = true ]; then
@@ -56,29 +63,31 @@ if [ "$OFFLINE" = true ]; then
     echo "Running in offline mode."
     [ -f "$REQUIREMENTS_TXT" ] && $PIP_COMMAND install --no-index --no-deps -r $REQUIREMENTS_TXT || echo "$REQUIREMENTS_TXT not found locally and cannot be installed in offline mode."
 else
-    [ -f "$REQUIREMENTS_TXT" ] && $PIP_COMMAND install -r $REQUIREMENTS_TXT || $PIP_COMMAND install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements.txt
+    [ -f "$REQUIREMENTS_TXT" ] && $PIP_COMMAND install -r $REQUIREMENTS_TXT || $PIP_COMMAND install -r https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/requirements.txt
 fi
 
+# Check for local requirements.yml and download if necessary, unless skipping remote requirements
 if [ ! -f "$REQUIREMENTS_YML" ]; then
     if [ "$OFFLINE" = true ]; then
-        echo "$REQUIREMENTS_YML not found locally and cannot be downloaded in offline mode."
-        exit 1
+        echo "$REQUIREMENTS_YML not found locally"
+    elif [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
+        echo "Skipping download of $REQUIREMENTS_YML as per --skip-remote-requirements."
     else
         echo "Local $REQUIREMENTS_YML not found. Downloading from URL..."
-        curl https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements_amzn2023.yml -o $REQUIREMENTS_YML
+        curl $REQUIREMENTS_YML_URL -o $REQUIREMENTS_YML
     fi
 fi
 
 GALAXY_ROLE_COMMAND="ansible-galaxy role install"
 GALAXY_COLLECTION_COMMAND="ansible-galaxy collection install"
 
-if [ "$OFFLINE" = true ]; then
-    GALAXY_ROLE_COMMAND="$GALAXY_ROLE_COMMAND --ignore-errors"
-    GALAXY_COLLECTION_COMMAND="$GALAXY_COLLECTION_COMMAND --ignore-errors"
+# Install roles and collections only if requirements.yml file exists
+if [ -f "$REQUIREMENTS_YML" ]; then
+    $GALAXY_ROLE_COMMAND -r $REQUIREMENTS_YML -p roles
+    $GALAXY_COLLECTION_COMMAND -r $REQUIREMENTS_YML -p ./collections
+else
+    echo "$REQUIREMENTS_YML not found. Skipping role and collection installation."
 fi
-
-$GALAXY_ROLE_COMMAND -r $REQUIREMENTS_YML -p roles
-$GALAXY_COLLECTION_COMMAND -r $REQUIREMENTS_YML -p ./collections
 
 if [ -f "requirements_extra.yml" ]; then
     echo "Found requirements_extra.yml ..."
@@ -90,14 +99,16 @@ fi
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""
 [[ -n "${TAGS}" ]] && TAGS_OPTION="--tags \"${TAGS}\"" || TAGS_OPTION=""
 
-ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/access.yml"
+ACCESS_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/access.yml"
 COMMAND="ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 $MAIN_YML ${EXTRA_OPTION} --vault-password-file vault_password ${TAGS_OPTION} ${SKIP_TAGS_OPTION}"
-PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/main.yml"
+PLAYBOOK_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/main.yml"
 
 if [ ! -f "vars/access.yml" ]; then
     if [ "$OFFLINE" = true ]; then
         echo "vars/access.yml not found locally and cannot be downloaded in offline mode."
         exit 1
+    elif [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
+        echo "Skipping download of vars/access.yml as per --skip-remote-requirements."
     else
         echo "Local vars/access.yml not found. Downloading from URL..."
         curl $ACCESS_URL -o vars/access.yml
@@ -108,6 +119,8 @@ if [ ! -f "$MAIN_YML" ]; then
     if [ "$OFFLINE" = true ]; then
         echo "$MAIN_YML not found locally and cannot be downloaded in offline mode."
         exit 1
+    elif [ "$SKIP_REMOTE_REQUIREMENTS" = true ]; then
+        echo "Skipping download of $MAIN_YML as per --skip-remote-requirements."
     else
         echo "Local $MAIN_YML not found. Downloading from URL..."
         curl -O $PLAYBOOK_URL

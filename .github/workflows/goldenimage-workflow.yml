@@ -88,6 +88,17 @@ jobs:
             $GALAXY_ROLE_COMMAND -r requirements_extra.yml -p roles
             $GALAXY_COLLECTION_COMMAND -r requirements_extra.yml -p ./collections
           fi
+
+      - name: Remove existing requirements files if they exist
+        run: |
+          if [ -f "requirements.yml" ]; then
+            rm requirements.yml
+            echo "Removed requirements.yml"
+          fi
+          if [ -f "requirements_extra.yml" ]; then
+            rm requirements_extra.yml
+            echo "Removed requirements_extra.yml"
+          fi
         
       - name: Delete existing files from S3
         if: ${{ env.TAG_NAME != '' }}
@@ -107,4 +118,4 @@ jobs:
 
       - name: Execute Packer Build
         run: |
-          packer build --only=amazon-ebs.${{ inputs.OS }}_${{ inputs.CPU_ARCH }} -var cpu_arch=${{ inputs.CPU_ARCH }} -var 'tag=${{ env.TAG_NAME }}' -var app=${{ inputs.APP }} -var 'aws_region=${{ inputs.REGION }}' -var 'verbose=${{ env.IS_TEST }}' -var 'base_path=${{ inputs.S3_BASE_PATH }}' goldenimage.pkr.hcl
+          packer build --only=amazon-ebs.${{ inputs.OS }}_${{ inputs.CPU_ARCH }} -var cpu_arch=${{ inputs.CPU_ARCH }} -var 'tag=${{ env.TAG_NAME }}' -var app=${{ inputs.APP }} -var 'aws_region=${{ inputs.REGION }}' -var 'verbose=${{ env.IS_TEST }}' -var 'base_path=${{ inputs.S3_BASE_PATH }}' -var skip_remote_requirements=true goldenimage.pkr.hcl

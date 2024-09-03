@@ -12,6 +12,7 @@ PLAYBOOK_NAME="${PLAYBOOK_NAME:-}"
 PLAYBOOK_BASE_URL="${PLAYBOOK_BASE_URL:-}"
 VAULT_PASSWORD="${VAULT_PASSWORD:-}"
 VERBOSE="${VERBOSE:-false}"
+SKIP_REMOTE_REQUIREMENTS="${SKIP_REMOTE_REQUIREMENTS:-false}"
 
 usage() {
     echo "Usage: $0 -r <region> --playbook_name <name> --playbook_base_url <url> --vault_password <password> [options]"
@@ -30,6 +31,7 @@ usage() {
     echo "  --playbook_version <version>  Specify the playbook version."
     echo "  --toolkit_version <version>   Specify the toolkit version."
     echo "  --verbose                     Enable verbose mode."
+    echo "  --skip_remote_requirements    Skip downloading remote requirements."
     exit 1
 }
 
@@ -60,6 +62,9 @@ while getopts ":r:-:" option; do
           ;;
         verbose)
           VERBOSE=true
+          ;;
+        skip_remote_requirements)
+          SKIP_REMOTE_REQUIREMENTS=true
           ;;
         *)
           echo "Invalid option --${OPTARG}"
@@ -207,11 +212,11 @@ run_main_script() {
         curl -s "$MAIN_SCRIPT_URL" -o main.sh
     fi
     
-    # Construct the command with verbose option if enabled
+    # Construct the command with verbose and SKIP_REMOTE_REQUIREMENTS options if enabled
     if [ "$VERBOSE" = true ]; then
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --verbose
+        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --verbose --skip_remote_requirements="$SKIP_REMOTE_REQUIREMENTS"
     else
-        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation"
+        bash main.sh -e "playbook_name=$PLAYBOOK_NAME" --tags "installation" --skip_remote_requirements="$SKIP_REMOTE_REQUIREMENTS"
     fi
 
     cleanup

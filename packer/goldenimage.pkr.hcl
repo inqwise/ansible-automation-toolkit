@@ -69,6 +69,11 @@ variable "verbose" {
   default = false
 }
 
+variable "skip_remote_requirements" {
+  type    = bool
+  default = false
+}
+
 ######## 
 
 data "amazon-secretsmanager" "vault_secret" {
@@ -103,7 +108,8 @@ locals {
           "VAULT_PASSWORD=${data.amazon-secretsmanager.vault_secret.value}",
           "PLAYBOOK_VERSION=${var.tag}",
           "TOOLKIT_VERSION=${var.toolkit_version}",
-          "VERBOSE=${var.verbose}"
+          "VERBOSE=${var.verbose}",
+          "SKIP_REMOTE_REQUIREMENTS=${var.skip_remote_requirements}"
         ]
         
     }
