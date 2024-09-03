@@ -60,6 +60,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y awscli packer    
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+      - run: pip install ansible
+
+      - name: Check and download requirements.yml if not found
+        run: |
+          REQUIREMENTS_YML="requirements.yml"
+          if [ ! -f "$REQUIREMENTS_YML" ]; then
+            echo "Local $REQUIREMENTS_YML not found. Downloading from URL..."
+            curl https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/requirements_amzn2023.yml -o $REQUIREMENTS_YML
+          fi
+
+      - name: Install Ansible roles and collections
+        run: |
+          GALAXY_ROLE_COMMAND="ansible-galaxy role install"
+          GALAXY_COLLECTION_COMMAND="ansible-galaxy collection install"
+          
+          $GALAXY_ROLE_COMMAND -r requirements.yml -p roles
+          $GALAXY_COLLECTION_COMMAND -r requirements.yml -p ./collections
+
+      - name: Install extra requirements if present
+        run: |
+          if [ -f "requirements_extra.yml" ]; then
+            echo "Found requirements_extra.yml ..."
+            $GALAXY_ROLE_COMMAND -r requirements_extra.yml -p roles
+            $GALAXY_COLLECTION_COMMAND -r requirements_extra.yml -p ./collections
+          fi
+        
       - name: Delete existing files from S3
         if: ${{ env.TAG_NAME != '' }}
         run: |
