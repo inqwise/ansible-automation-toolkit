@@ -36,7 +36,7 @@ jobs:
       IS_TEST: ${{ github.ref == 'refs/heads/test-workflow' }}
       TAG_NAME: ${{ github.ref_name }}
       REPO_NAME: ${{ github.event.repository.name }}
-    
+      
     steps:
       - name: Determine Tag
         if: ${{ github.ref_type == 'tag' || env.IS_TEST }}
@@ -74,19 +74,16 @@ jobs:
           fi
 
       - name: Install Ansible roles and collections
-        run: |
-          GALAXY_ROLE_COMMAND="ansible-galaxy role install"
-          GALAXY_COLLECTION_COMMAND="ansible-galaxy collection install"
-          
-          $GALAXY_ROLE_COMMAND -r requirements.yml -p roles
-          $GALAXY_COLLECTION_COMMAND -r requirements.yml -p ./collections
+        run: | 
+          ansible-galaxy role install -r requirements.yml -p roles
+          ansible-galaxy collection install -r requirements.yml -p ./collections
 
       - name: Install extra requirements if present
         run: |
           if [ -f "requirements_extra.yml" ]; then
             echo "Found requirements_extra.yml ..."
-            $GALAXY_ROLE_COMMAND -r requirements_extra.yml -p roles
-            $GALAXY_COLLECTION_COMMAND -r requirements_extra.yml -p ./collections
+            ansible-galaxy role install -r requirements_extra.yml -p roles
+            ansible-galaxy collection install -r requirements_extra.yml -p ./collections
           fi
 
       - name: Remove existing requirements files if they exist
@@ -109,7 +106,7 @@ jobs:
       - name: Upload files to S3
         run: |
           echo "Uploading files to ${{ env.S3_PATH }}/"
-          aws s3 cp . ${{ env.S3_PATH }}/ --recursive --exclude ".*" --exclude ".*/**" --exclude "Vagrantfile*"
+          aws s3 cp . ${{ env.S3_PATH }}/ --recursive --exclude ".*" --exclude ".*/**" --exclude "Vagrantfile*" --exclude "*.md"
 
       - name: Install Packer Plugin for Amazon
         run: |
