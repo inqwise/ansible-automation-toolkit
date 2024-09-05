@@ -15,6 +15,9 @@ last_run_uuid=$(jq -r '.last_run_uuid' "$manifest_file")
 # Find the object in the builds array with the matching packer_run_uuid
 last_run_object=$(jq --arg uuid "$last_run_uuid" '.builds[] | select(.packer_run_uuid == $uuid)' "$manifest_file")
 
+# Local packer file
+local_goldenimage_packer="goldenimage.pkr.hcl"
+
 # Check if the last_run_object was found
 if [ -n "$last_run_object" ]; then
     echo "Matching object found:"
@@ -53,4 +56,9 @@ if [ -n "$last_run_object" ]; then
     echo "Script executed with provided arguments."
 else
     echo "No matching object found."
+fi
+
+if [ -f "$local_goldenimage_packer" ]; then
+    rm "$local_goldenimage_packer"
+    echo "remove local_goldenimage_packer file."
 fi
