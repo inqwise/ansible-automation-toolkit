@@ -125,7 +125,7 @@ get_obsolete_amis() {
     echo "$obsolete_amis"
 }
 
-# Function to delete obsolete AMIs and print in the format ami_name (ami_id)
+# Function to delete obsolete AMIs and their snapshots
 delete_obsolete_amis() {
     local obsolete_amis="$1"
     total_to_delete=$(($(echo "$obsolete_amis" | jq length) - $KEEP_HISTORY))
@@ -137,10 +137,55 @@ delete_obsolete_amis() {
             ami_name=$(echo "$ami_info" | awk -F'[()]' '{print $1}')
             
             if [[ "$DRY_RUN" == "false" ]]; then
-                echo "Deleting AMI: $ami_name ($ami_id)" >&2
-                aws ec2 deregister-image --profile "$PROFILE" --region "$REGION" --image-id "$ami_id"
+                echo "Preparing to delete AMI: $ami_name ($ami_id)" >&2
+                
+                # Fetch associated snapshots and store in variable
+                snapshot_ids=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+                    --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
+
+                # Store snapshots in an array
+                snapshot_array=()
+                if [[ -n "$snapshot_ids" && "$snapshot_ids" != "None" ]]; then
+                    echo "Snapshots associated with AMI: $ami_id:" >&2
+                    for snapshot_id in $snapshot_ids; do
+                        echo "Snapshot: $snapshot_id" >&2
+                        snapshot_array+=("$snapshot_id")
+                    done
+                else
+                    echo "No snapshots found for AMI: $ami_id" >&2
+                fi
+
+                # Deregister the AMI
+                echo "Deregistering AMI: $ami_name ($ami_id)" >&2
+                if aws ec2 deregister-image --profile "$PROFILE" --region "$REGION" --image-id "$ami_id"; then
+                    echo "Successfully deregistered AMI: $ami_name ($ami_id)" >&2
+
+                    # Delete the associated snapshots after successful deregistration
+                    if [[ ${#snapshot_array[@]} -gt 0 ]]; then
+                        for snapshot_id in "${snapshot_array[@]}"; do
+                            echo "Deleting snapshot: $snapshot_id associated with AMI: $ami_id" >&2
+                            aws ec2 delete-snapshot --profile "$PROFILE" --region "$REGION" --snapshot-id "$snapshot_id"
+                        done
+                    else
+                        echo "No snapshots to delete for AMI: $ami_id" >&2
+                    fi
+                else
+                    echo "Failed to deregister AMI: $ami_name ($ami_id). Skipping snapshot deletion." >&2
+                fi
             else
                 echo "DRY RUN: Would delete AMI: $ami_name ($ami_id)" >&2
+
+                # Print snapshot IDs for dry run
+                snapshot_ids=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+                    --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
+                
+                if [[ -n "$snapshot_ids" && "$snapshot_ids" != "None" ]]; then
+                    for snapshot_id in $snapshot_ids; do
+                        echo "DRY RUN: Would delete snapshot: $snapshot_id associated with AMI: $ami_id" >&2
+                    done
+                else
+                    echo "DRY RUN: No snapshots found for AMI: $ami_id" >&2
+                fi
             fi
         done
     else
