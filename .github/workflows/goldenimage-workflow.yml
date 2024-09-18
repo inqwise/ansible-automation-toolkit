@@ -44,7 +44,7 @@ jobs:
 
       - name: Set S3_PATH Environment Variable
         run: | 
-          echo "S3_PATH=${{ inputs.S3_BASE_PATH }}/${{ env.REPO_NAME }}/${{ env.TAG_NAME }}" >> $GITHUB_ENV
+          echo "S3_PATH=${{ inputs.S3_BASE_PATH }}/${{ inputs.APP }}/${{ env.TAG_NAME }}" >> $GITHUB_ENV
 
       - name: Check out the repository
         uses: actions/checkout@v4
