@@ -122,3 +122,16 @@ jobs:
           export AMI_ID=$(jq -r '.ami' goldenimage_result.json)
           export TIMESTAMP=$(jq -r '.timestamp' goldenimage_result.json)
           export PROFILE=$(jq -r '.profile' goldenimage_result.json)
+
+      - name: Notify Discord for success
+        uses: sarisia/actions-status-discord@v1
+        if: success()
+        with:
+          nodetail: true
+          webhook: "${{ inputs.WEBHOOK_URL }}"
+          avatar_url: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
+          username: "${{ inputs.APP }} goldenimage workflow"
+          content: "Success"
+          title: "New AMI was created on ${{ inputs.REGION }}"
+          description: "Created a new version of the AMI and the template, and set the new template version as the default"
+          color: 5763719
