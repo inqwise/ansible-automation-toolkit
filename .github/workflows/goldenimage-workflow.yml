@@ -130,8 +130,8 @@ jobs:
           nodetail: true
           webhook: "${{ inputs.WEBHOOK_URL }}"
           avatar_url: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
-          username: "${{ inputs.APP }} goldenimage workflow"
+          username: "${{ inputs.APP }} ${{ env.PROFILE }} goldenimage workflow"
           content: "Success"
-          title: "New AMI was created on ${{ inputs.REGION }}"
-          description: "Created a new version of the AMI and the template, and set the new template version as the default"
+          title: "New AMI was created on ${{ inputs.REGION }} by tag:${{ env.TAG_NAME }}"
+          description: "Created a new version of the AMI and the template, and set the new template version as the default ${{ env.TIMESTAMP }} /n AMI:${{ env.AMI_ID }}"
           color: 5763719
