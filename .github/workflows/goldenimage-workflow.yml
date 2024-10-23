@@ -23,6 +23,9 @@ on:
       TOOLKIT_VERSION:
         required: true
         type: string
+      WEBHOOK_URL:
+        required: true
+        type: string
 
 permissions:
   id-token: write   # Required for requesting the JWT
