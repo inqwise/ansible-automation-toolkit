@@ -85,6 +85,17 @@
         name: ansible_utils
         tasks_from: active_interfaces
 
+    - name: Load webhook vars
+      ansible.builtin.include_role:
+        name: discord
+        tasks_from: load_vars_by_url
+        apply:
+          tags: configuration
+      tags: configuration
+      vars:
+        webhooks_file_url: "{{ internal_base_url }}/discord/webhooks.yml"
+      when: webhooks_file_url is defined
+
     - name: Telegraf
       ansible.builtin.include_role:
         name: telegraf
