@@ -139,7 +139,9 @@
         apply:
           tags: configuration
       tags: configuration
-      
+      vars: 
+        discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+
     rescue:
       - name: Send fail message
         ansible.builtin.include_role:
@@ -147,6 +149,8 @@
           apply:
             tags: configuration
         tags: configuration
+        vars: 
+          discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
       
       - name: re-raise the error
         ansible.builtin.fail:
