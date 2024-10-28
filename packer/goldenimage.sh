@@ -220,7 +220,7 @@ run_main_script() {
     fi
     
     # Initialize the command with required options
-    cmd="bash main.sh -e \"playbook_name=$PLAYBOOK_NAME environment_id=$ENVIRONMENT_ID\"  --tags installation"
+    cmd="bash main.sh --tags installation"
     
     # Add verbose option if enabled
     if [ "$VERBOSE" = true ]; then
@@ -232,6 +232,10 @@ run_main_script() {
         cmd="$cmd --skip-remote-requirements"
     fi
     
+    local extra="playbook_name=$PLAYBOOK_NAME environment_id=$ENVIRONMENT_ID"
+
+    cmd="$cmd -e $extra"
+
     # Execute the command
     $cmd
 

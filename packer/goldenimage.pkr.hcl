@@ -98,7 +98,6 @@ data "amazon-parameterstore" "UserDataYAMLConfig" {
 ######## 
 locals {
   user_data_config = yamldecode(data.amazon-parameterstore.UserDataYAMLConfig.value)
-  
 }
 
 locals {
