@@ -103,7 +103,6 @@ if [ -f "requirements_extra.yml" ]; then
     $GALAXY_ROLE_COMMAND -r requirements_extra.yml -p roles
     $GALAXY_COLLECTION_COMMAND -r requirements_extra.yml -p ./collections
 fi
-echo "extra:$EXTRA"
 
 [[ -n "${EXTRA}" ]] && EXTRA_OPTION="-e \"${EXTRA}\"" || EXTRA_OPTION=""
 [[ -n "${SKIP_TAGS}" ]] && SKIP_TAGS_OPTION="--skip-tags \"${SKIP_TAGS}\"" || SKIP_TAGS_OPTION=""

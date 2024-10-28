@@ -17,7 +17,16 @@ usage() {
 
 while getopts ":e:-:" option; do
   case "${option}" in
-    e) EXTRA="${OPTARG}";;
+    e)
+      # Capture the initial part of the EXTRA argument
+      EXTRA="${OPTARG}"
+      
+      # Loop to append all additional values until a new flag is reached
+      while [[ "${!OPTIND}" != -* && "${!OPTIND}" != "" ]]; do
+        EXTRA="${EXTRA} ${!OPTIND}"
+        OPTIND=$((OPTIND + 1))
+      done
+      ;;
     -)
       case "${OPTARG}" in
         skip-tags) SKIP_TAGS="${!OPTIND}"; OPTIND=$((OPTIND + 1));;
