@@ -21,13 +21,13 @@
     - name: Include main vars
       ansible.builtin.include_vars:
         dir: vars/main
-        files_matching: "{{ private_domain }}.yml"
+        files_matching: "{{ environment_id }}.yml"
       tags: always
 
     - name: Include credentials vars
       ansible.builtin.include_vars:
         dir: vars/credentials
-        files_matching: "{{ private_domain }}.yml"
+        files_matching: "{{ environment_id }}.yml"
       tags: always
 
     - name: Include users and groups vars

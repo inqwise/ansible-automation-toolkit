@@ -20,6 +20,10 @@ PARAMETER=$(aws ssm get-parameter --name "UserDataYAMLConfig" --query "Parameter
 TOPIC_NAME=$(echo "$PARAMETER" | grep 'topic_name' | awk '{print $2}')
 echo "Topic Name: $TOPIC_NAME"
 
+# Optional variable: Retrieve environment ID
+ENVIRONMENT_ID=$(echo "$PARAMETER" | grep 'environment_id' | awk '{print $2}')
+echo "Environment ID: $ENVIRONMENT_ID"
+
 SECRET_NAME="vault_secret"
 VAULT_PASSWORD=$(aws secretsmanager get-secret-value --secret-id $SECRET_NAME --region $REGION --query 'SecretString' --output text)
 
@@ -43,7 +47,16 @@ main () {
     export ANSIBLE_VERBOSITY=0
     export ANSIBLE_DISPLAY_SKIPPED_HOSTS=false
     echo "$VAULT_PASSWORD" > vault_password
-    ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml --vault-password-file vault_password -e "playbook_name=$PLAYBOOK_NAME" --tags configuration
+    
+    # Run ansible-playbook with optional ENVIRONMENT_ID
+    if [[ -n "${ENVIRONMENT_ID:-}" ]]; then
+        ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml \
+            --vault-password-file vault_password -e "playbook_name=$PLAYBOOK_NAME environment_id=$ENVIRONMENT_ID" --tags configuration
+    else
+        ansible-playbook --connection=local --inventory 127.0.0.1, --limit 127.0.0.1 main.yml \
+            --vault-password-file vault_password -e "playbook_name=$PLAYBOOK_NAME" --tags configuration
+    fi
+
     cleanup
 }
 trap 'catch_error "$ERROR"' ERR

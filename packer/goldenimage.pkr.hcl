@@ -74,6 +74,11 @@ variable "skip_remote_requirements" {
   default = false
 }
 
+variable "environment_id" {
+  type    = string
+  default = ""
+}
+
 ######## 
 
 data "amazon-secretsmanager" "vault_secret" {
@@ -83,9 +88,21 @@ data "amazon-secretsmanager" "vault_secret" {
   
 }
 
+data "amazon-parameterstore" "UserDataYAMLConfig" {
+  name = "UserDataYAMLConfig"
+  with_decryption = false
+  region = "${var.aws_region}"
+  profile = "${var.aws_profile}"
+}
+
 ######## 
+locals {
+  user_data_config = yamldecode(data.amazon-parameterstore.UserDataYAMLConfig.value)
+  
+}
 
 locals {
+  environment_id = var.environment_id != "" ? var.environment_id : local.user_data_config.environment_id
   instance_types = {
     arm64 = var.instance_type != "" ? var.instance_type : "t4g.small"
     x86   = var.instance_type != "" ? var.instance_type : "t3.small"
@@ -109,9 +126,9 @@ locals {
           "PLAYBOOK_VERSION=${var.tag}",
           "TOOLKIT_VERSION=${var.toolkit_version}",
           "VERBOSE=${var.verbose}",
-          "SKIP_REMOTE_REQUIREMENTS=${var.skip_remote_requirements}"
+          "SKIP_REMOTE_REQUIREMENTS=${var.skip_remote_requirements}",
+          "ENVIRONMENT_ID=${local.environment_id}"
         ]
-        
     }
     
     post_processors = {

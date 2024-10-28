@@ -13,6 +13,7 @@ PLAYBOOK_BASE_URL="${PLAYBOOK_BASE_URL:-}"
 VAULT_PASSWORD="${VAULT_PASSWORD:-}"
 VERBOSE="${VERBOSE:-false}"
 SKIP_REMOTE_REQUIREMENTS="${SKIP_REMOTE_REQUIREMENTS:-false}"
+ENVIRONMENT_ID="${ENVIRONMENT_ID:-}"
 
 usage() {
     echo "Usage: $0 -r <region> --playbook_name <name> --playbook_base_url <url> --vault_password <password> [options]"
@@ -24,6 +25,7 @@ usage() {
     echo "  --vault_password <password>   Specify the vault password."
     echo
     echo "Optional arguments:"
+    echo "  --environment-id <id>         Specify the environment ID."
     echo "  --token <token>               Specify the token."
     echo "  --get_pip_url <url>           Specify the URL for get-pip."
     echo "  --account_id <id>             Specify the account ID."
@@ -42,6 +44,9 @@ while getopts ":r:-:" option; do
       ;;
     -)
       case "${OPTARG}" in
+        environment-id)
+          ENVIRONMENT_ID="${!OPTIND}"; OPTIND=$((OPTIND + 1))
+          ;;
         get_pip_url)
           GET_PIP_URL="${!OPTIND}"; OPTIND=$((OPTIND + 1))
           ;;
@@ -100,6 +105,11 @@ fi
 
 if [ -z "$VAULT_PASSWORD" ]; then
   echo "Error: VAULT_PASSWORD variable is mandatory."
+  usage
+fi
+
+if [ -z "$ENVIRONMENT_ID" ]; then
+  echo "Error: ENVIRONMENT_ID variable is mandatory."
   usage
 fi
 
@@ -210,7 +220,7 @@ run_main_script() {
     fi
     
     # Initialize the command with required options
-    cmd="bash main.sh -e playbook_name=$PLAYBOOK_NAME --tags installation"
+    cmd="bash main.sh -e \"playbook_name=$PLAYBOOK_NAME environment_id=$ENVIRONMENT_ID\"  --tags installation"
     
     # Add verbose option if enabled
     if [ "$VERBOSE" = true ]; then
@@ -242,7 +252,8 @@ main() {
     assert_var "GET_PIP_URL" "$GET_PIP_URL"
     assert_var "REGION" "$REGION"
     assert_var "PLAYBOOK_VERSION" "$PLAYBOOK_VERSION"
-
+    assert_var "ENVIRONMENT_ID" "$ENVIRONMENT_ID"
+    
     setup_environment
     install_pip "$GET_PIP_URL"
     download_playbook "$PLAYBOOK_BASE_URL" "$PLAYBOOK_NAME" /deployment/playbook

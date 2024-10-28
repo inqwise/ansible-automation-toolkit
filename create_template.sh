@@ -5,7 +5,7 @@ set -euo pipefail
 
 # Function to display usage help
 usage() {
-    echo "Usage: $0 --template-name <TEMPLATE_NAME> --region <REGION> [--profile <PROFILE>]"
+    echo "Usage: $0 --template-name <TEMPLATE_NAME> --region <REGION> [--profile <PROFILE>] [--associate-public-ip]"
     echo ""
     echo "Mandatory Arguments:"
     echo "  --template-name   Name of the launch template (e.g., 'mysql')"
@@ -13,9 +13,13 @@ usage() {
     echo ""
     echo "Optional Arguments:"
     echo "  --profile         AWS CLI profile (default: 'default')"
+    echo "  --associate-public-ip  Associate a public IP address with the instance"
     echo ""
     exit 1
 }
+
+# Default values
+ASSOCIATE_PUBLIC_IP="false"
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -23,6 +27,7 @@ while [[ "$#" -gt 0 ]]; do
         --template-name) TEMPLATE_NAME="$2"; shift ;;
         --region) REGION="$2"; shift ;;
         --profile) PROFILE="$2"; shift ;;
+        --associate-public-ip) ASSOCIATE_PUBLIC_IP="true" ;;
         *) echo "Unknown parameter passed: $1"; usage ;;
     esac
     shift
@@ -129,6 +134,13 @@ if [[ "$EXISTING_TEMPLATE" == "None" || -z "$EXISTING_TEMPLATE" ]]; then
     fi
   fi
 
+  # Associate public IP if requested
+  if [[ "$ASSOCIATE_PUBLIC_IP" == "true" ]]; then
+    NETWORK_INTERFACE="{\"AssociatePublicIpAddress\": true, \"DeviceIndex\": 0, \"Groups\": [\"$SECURITY_GROUP_ID\"]}"
+  else
+    NETWORK_INTERFACE="{}"
+  fi
+
   aws ec2 create-launch-template \
     --launch-template-name "$TEMPLATE_NAME" \
     --version-description "Launch template for $TEMPLATE_NAME (Auto Scaling)" \
@@ -143,6 +155,7 @@ if [[ "$EXISTING_TEMPLATE" == "None" || -z "$EXISTING_TEMPLATE" ]]; then
         \"HttpPutResponseHopLimit\": 2,
         \"InstanceMetadataTags\": \"enabled\"
       },
+      \"NetworkInterfaces\": [$NETWORK_INTERFACE],
       \"TagSpecifications\": [
         {
           \"ResourceType\": \"instance\",
