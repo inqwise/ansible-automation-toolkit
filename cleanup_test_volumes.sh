@@ -2,7 +2,7 @@
 
 # Default values for arguments
 PROFILE="default"
-DRY_RUN=true
+DRY_RUN=false
 NAME_PATTERN="*-test*"
 
 # Usage function to display help
