@@ -94,7 +94,12 @@
       tags: configuration
       vars:
         webhooks_file_url: "{{ internal_base_url }}/discord/webhooks.yml"
-      when: webhooks_file_url is defined
+      when: internal_base_url is defined
+
+    - name: Skip if internal_base_url is undefind
+      ansible.builtin.debug:
+        msg: "internal_base_url is undefind."
+      when: internal_base_url is undefind
 
     - name: Telegraf
       ansible.builtin.include_role:
