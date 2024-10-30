@@ -85,6 +85,22 @@
         name: ansible_utils
         tasks_from: active_interfaces
 
+    - name: Load webhook vars
+      ansible.builtin.include_role:
+        name: discord
+        tasks_from: load_vars_by_url
+        apply:
+          tags: configuration
+      tags: configuration
+      vars:
+        webhooks_file_url: "{{ internal_base_url }}/discord/webhooks.yml"
+      when: internal_base_url is defined
+
+    - name: Skip if internal_base_url is undefind
+      ansible.builtin.debug:
+        msg: "internal_base_url is undefind."
+      when: internal_base_url is undefind
+
     - name: Telegraf
       ansible.builtin.include_role:
         name: telegraf
@@ -128,7 +144,9 @@
         apply:
           tags: configuration
       tags: configuration
-      
+      vars: 
+        discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+
     rescue:
       - name: Send fail message
         ansible.builtin.include_role:
@@ -136,6 +154,8 @@
           apply:
             tags: configuration
         tags: configuration
+        vars: 
+          discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
       
       - name: re-raise the error
         ansible.builtin.fail:
