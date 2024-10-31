@@ -148,6 +148,11 @@
         discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
 
     rescue:
+      - name: Insure that ansible_failed_result or ansible_failed_task defined (Workaround for known bug)
+        set_fact:
+          ansible_failed_result: "Operation failed due to a missing file. Please check the logs for detailed information."
+        when: not (ansible_failed_result is defined or ansible_failed_task is defined)
+
       - name: Send fail message
         ansible.builtin.include_role:
           name: discord
