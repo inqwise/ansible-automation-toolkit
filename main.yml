@@ -89,17 +89,15 @@
       ansible.builtin.include_role:
         name: discord
         tasks_from: load_vars_by_url
-        apply:
-          tags: configuration
       tags: configuration
       vars:
         webhooks_file_url: "{{ internal_base_url }}/discord/webhooks.yml"
       when: internal_base_url is defined
 
-    - name: Skip if internal_base_url is undefind
+    - name: Skip if internal_base_url is undefined
       ansible.builtin.debug:
-        msg: "internal_base_url is undefind."
-      when: internal_base_url is undefind
+        msg: "internal_base_url is undefined."
+      when: internal_base_url is undefined
 
     - name: Telegraf
       ansible.builtin.include_role:
