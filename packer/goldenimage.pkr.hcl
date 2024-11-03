@@ -213,6 +213,7 @@ source "amazon-ebs" "amzn2023_arm64" {
       device_name = "/dev/xvda"
       encrypted   = true
       kms_key_id  = local.kms_key_id
+      delete_on_termination = true
     }
   }
 }
