@@ -161,7 +161,8 @@ locals {
   timestamp = formatdate("YYYYMMDDhhmm", timestamp())
 }
 
-source "amazon-ebs" "amzn2023_arm64" {
+
+source "amazon-ebs" "common" {
   force_deregister      = true
   force_delete_snapshot = true
   ami_name              = "${var.app}-${var.tag}"
@@ -173,17 +174,7 @@ source "amazon-ebs" "amzn2023_arm64" {
   iam_instance_profile  = var.aws_iam_instance_profile
   ssh_username          = "ec2-user"
   spot_price            = "auto"
-  skip_create_ami       = false
-
-  source_ami_filter {
-    filters = {
-      name                = "al2023-ami-2023.*-kernel-6.1-arm64"
-      root-device-type    = "ebs"
-      virtualization-type = "hvm"
-    }
-    most_recent = true
-    owners      = ["amazon"]
-  }
+  skip_create_ami       = false # for debug
 
   metadata_options {
     instance_metadata_tags     = "enabled"
@@ -219,10 +210,31 @@ source "amazon-ebs" "amzn2023_arm64" {
 }
 
 build {
-  sources = [
-    "source.amazon-ebs.amzn2023_arm64"
-    # Include "source.amazon-ebs.amzn2_x86" if defined
-  ]
+  source "source.amazon-ebs.common" {
+    name = "amzn2023_arm64"
+    source_ami_filter {
+      filters={
+        name                = "al2023-ami-2023.*-kernel-6.1-arm64"
+        root-device-type    = "ebs"
+        virtualization-type = "hvm"
+      }
+      most_recent = true 
+      owners      = ["amazon"]
+    }
+  }
+
+  source "source.amazon-ebs.common" {
+    name = "amzn2_x86"
+    source_ami_filter {
+      filters={
+        name                = "amzn2-ami-kernel-5.*-x86_64-gp2"
+        root-device-type    = "ebs"
+        virtualization-type = "hvm"
+      }
+      most_recent = true 
+      owners      = ["amazon"]
+    }
+  }
 
   provisioner "shell" {
     scripts          = local.common_build_settings.shell_provisioners.scripts
