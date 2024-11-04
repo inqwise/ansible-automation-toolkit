@@ -75,6 +75,17 @@ variable "kms_key_id" {
   default     = ""
 }
 
+variable "encrypted" {
+  description = "Whether to encrypt the root EBS volume. Acceptable values are 'true', 'false', or ''. An empty string defaults to 'true'."
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = contains(["true", "false", ""], var.encrypted)
+    error_message = "The 'encrypted' variable must be either 'true', 'false', or an empty string ''."
+  }
+}
+
 data "amazon-secretsmanager" "vault_secret" {
   name    = "vault_secret"
   region  = var.aws_region
@@ -103,6 +114,24 @@ locals {
   # Compute kms_key_id based on precedence
   kms_key_id = var.kms_key_id != "" ? var.kms_key_id : (
     contains(keys(local.user_data_config), "kms_key_id") ? local.user_data_config.kms_key_id : ""
+  )
+
+  # Compute encrypted as string based on precedence
+  encrypted = (
+    var.encrypted != "" ? (
+      var.encrypted == "true" || var.encrypted == "false" ? var.encrypted :
+      error("Invalid value for 'encrypted'. Must be 'true', 'false', or ''.")
+    ) : (
+      contains(keys(local.user_data_config), "encrypted") ? tostring(local.user_data_config.encrypted) :
+      ""
+    )
+  )
+
+  # Convert encrypted string to boolean for usage
+  encrypted_bool = (
+    local.encrypted == "true" ? true :
+    local.encrypted == "false" ? false :
+    true
   )
 
   # Compute playbook_base_url based on precedence
@@ -199,11 +228,11 @@ source "amazon-ebs" "common" {
   }
 
   dynamic "launch_block_device_mappings" {
-    for_each = local.kms_key_id != "" ? [1] : []
+    for_each = (local.kms_key_id != "" || local.encrypted != "") ? [1] : []
     content {
-      device_name = "/dev/xvda"
-      encrypted   = true
-      kms_key_id  = local.kms_key_id
+      device_name           = "/dev/xvda"
+      encrypted             = local.kms_key_id != "" ? true : local.encrypted_bool
+      kms_key_id            = local.kms_key_id != "" ? local.kms_key_id : null
       delete_on_termination = true
     }
   }
