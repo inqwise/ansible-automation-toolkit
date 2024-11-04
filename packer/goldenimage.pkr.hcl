@@ -33,6 +33,11 @@ variable "aws_region" {
   type = string
 }
 
+variable "aws_run_region" {
+  type = string
+  default = ""
+}
+
 variable "aws_iam_instance_profile" {
   type    = string
   default = "PackerRole"
@@ -116,22 +121,12 @@ locals {
     contains(keys(local.user_data_config), "kms_key_id") ? local.user_data_config.kms_key_id : ""
   )
 
-  # Compute encrypted as string based on precedence
-  encrypted = (
-    var.encrypted != "" ? (
-      var.encrypted == "true" || var.encrypted == "false" ? var.encrypted :
-      error("Invalid value for 'encrypted'. Must be 'true', 'false', or ''.")
-    ) : (
-      contains(keys(local.user_data_config), "encrypted") ? (local.user_data_config.encrypted ? "true" : "false") :
-      ""
-    )
+  aws_run_region = var.aws_run_region != "" ? var.aws_run_region : (
+    contains(keys(local.user_data_config), "aws_run_region") ? local.user_data_config.aws_run_region : var.aws_region
   )
 
-  # Convert encrypted string to boolean for usage
-  encrypted_bool = (
-    local.encrypted == "true" ? true :
-    local.encrypted == "false" ? false :
-    true
+  ami_regions = (
+    contains(keys(local.user_data_config), "ami_regions") ? local.user_data_config.ami_regions : []
   )
 
   # Compute playbook_base_url based on precedence
@@ -197,7 +192,8 @@ source "amazon-ebs" "common" {
   ami_name              = "${var.app}-${var.tag}"
   ami_description       = "Image of ${var.app} version ${var.tag}"
   spot_instance_types   = [local.instance_types[var.cpu_arch]]
-  region                = var.aws_region
+  region                = local.aws_run_region
+  ami_regions           = local.ami_regions
   encrypt_boot          = false
   profile               = var.aws_profile
   iam_instance_profile  = var.aws_iam_instance_profile
@@ -228,11 +224,10 @@ source "amazon-ebs" "common" {
   }
 
   dynamic "launch_block_device_mappings" {
-    for_each = (local.kms_key_id != "" || local.encrypted != "") ? [1] : []
+    for_each = (local.kms_key_id != "") ? [1] : []
     content {
       device_name           = "/dev/xvda"
-      encrypted             = local.kms_key_id != "" ? true : local.encrypted_bool
-      kms_key_id            = local.kms_key_id != "" ? local.kms_key_id : null
+      kms_key_id            = local.kms_key_id
       delete_on_termination = true
     }
   }
