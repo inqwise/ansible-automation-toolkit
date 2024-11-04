@@ -122,7 +122,7 @@ locals {
       var.encrypted == "true" || var.encrypted == "false" ? var.encrypted :
       error("Invalid value for 'encrypted'. Must be 'true', 'false', or ''.")
     ) : (
-      contains(keys(local.user_data_config), "encrypted") ? tostring(local.user_data_config.encrypted) :
+      contains(keys(local.user_data_config), "encrypted") ? (local.user_data_config.encrypted ? "true" : "false") :
       ""
     )
   )
