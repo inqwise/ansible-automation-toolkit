@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # Function to display usage information
 usage() {
     echo "Usage: $0 -t template_name -a new_ami_id -d version_description -r aws_region [-p aws_profile] [-m]"

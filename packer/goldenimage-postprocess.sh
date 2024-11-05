@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # File path to the manifest.json
 manifest_file="manifest.json"
 # Output file path

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # Usage information
 usage() {
   echo "Usage: $0 -t template_name -p aws_profile [-r aws_region] [-n num_versions_to_keep]"

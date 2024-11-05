@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # Default values for arguments
 PROFILE="default"
 DRY_RUN=false

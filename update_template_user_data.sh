@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 # Function to display usage information
 usage() {
   echo "Usage: $0 -t template_names -r region -u user_data_file [-p profile] [-m]"
