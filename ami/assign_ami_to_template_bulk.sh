@@ -166,6 +166,12 @@ echo "$assign_items" | while IFS= read -r item; do
         fi
     fi
 
+    # Check if the update script succeeded
+    if [[ $? -ne 0 ]]; then
+        echo "Error: update_template_ami.sh failed for template '$template_name' with AMI '$new_ami_id'. Exiting."
+        exit 1
+    fi
+
     echo "Tagging AMI '$new_ami_id' as 'assigned'..."
     if [[ -n "$PROFILE" ]]; then
         aws ec2 create-tags \
