@@ -129,6 +129,10 @@ locals {
     contains(keys(local.user_data_config), "ami_regions") ? local.user_data_config.ami_regions : []
   )
 
+  ami_accounts = (
+    contains(keys(local.user_data_config), "ami_accounts") ? local.user_data_config.ami_accounts : []
+  )
+
   # Compute playbook_base_url based on precedence
   playbook_base_url = (
     var.base_path != "" ? var.base_path :
@@ -194,6 +198,7 @@ source "amazon-ebs" "common" {
   spot_instance_types   = [local.instance_types[var.cpu_arch]]
   region                = local.aws_run_region
   ami_regions           = local.ami_regions
+  ami_users             = local.ami_accounts
   encrypt_boot          = false
   profile               = var.aws_profile
   iam_instance_profile  = var.aws_iam_instance_profile
