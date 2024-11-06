@@ -1,0 +1,73 @@
+name: AMI Copy Workflow toolkit
+
+on:
+  workflow_call:
+    inputs:
+      TOOLKIT_VERSION:
+        description: 'Version of the Ansible Automation Toolkit'
+        required: true
+        default: 'default'
+        type: string
+      ROLE:
+        required: true
+        type: string
+      REGION:
+        description: 'AWS region for copy to (e.g., us-west-2)'
+        required: true
+        type: string
+      SOURCE_REGION:
+        description: 'AWS region from AMIs copied (e.g., eu-central-1)'
+        required: true
+        type: string
+      SOURCE_ACCOUNT_ID:
+        description: 'AWS account ID from AMIs copied (optional)'
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  id-token: write   # Required for requesting the JWT
+  contents: read    # Required for actions/checkout
+
+jobs:
+  call_copy_shared_amis_script:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the Repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Configure AWS Credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "${{ inputs.ROLE }}"
+          aws-region: "${{ inputs.REGION }}"
+
+      # Step 3: Download the copy_shared_amis.sh Script
+      - name: Download copy_shared_amis.sh script
+        run: |
+          echo "Downloading copy_shared_amis.sh script from Ansible Automation Toolkit..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${{ inputs.TOOLKIT_VERSION }}/ami/copy_shared_amis.sh -O copy_shared_amis.sh
+          chmod +x copy_shared_amis.sh
+          echo "copy_shared_amis.sh downloaded and made executable."
+
+      # Step 4: Execute the copy_shared_amis.sh Script
+      - name: Copy Shared AMIs
+        run: |
+          echo "Starting AMI copying process..."
+
+          # Initialize the command with mandatory arguments
+          CMD="./copy_shared_amis.sh --source-region \"${{ inputs.SOURCE_REGION }}\" --region \"${{ inputs.REGION }}\" --toolkit-version \"${{ inputs.TOOLKIT_VERSION }}\""
+
+          # Add --source-account-id if SOURCE_ACCOUNT_ID input is provided
+          if [[ -n "${{ inputs.SOURCE_ACCOUNT_ID }}" ]]; then
+            CMD+=" --source-account-id \"${{ inputs.SOURCE_ACCOUNT_ID }}\""
+          fi
+
+          # Execute the command
+          echo "Executing command: $CMD"
+          eval "$CMD"
+
+          echo "AMI copying process completed."

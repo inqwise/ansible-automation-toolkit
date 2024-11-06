@@ -1,0 +1,63 @@
+name: Deregister Old AMIs toolkit
+
+on:
+  workflow_call:
+    inputs:
+      role:
+        required: true
+        type: string
+      work_region:
+        description: 'AWS Region where clean process will occure'
+        required: true
+        type: string
+      region:
+        description: 'AWS Region managed from'
+        required: true
+        type: string
+      keep_history:
+        description: 'Number of recent AMIs to keep per app'
+        required: false
+        default: '3'
+        type: string
+      limit:
+        description: 'Limit on number of app groups to process'
+        required: false
+        default: '0'
+        type: string
+      toolkit_version:
+        description: 'Version of the toolkit for script download'
+        required: false
+        default: 'default'
+        type: string
+
+jobs:
+  call_deregister_old_ami_by_app_script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "${{ inputs.role }}"
+          aws-region: "${{ inputs.region }}"
+
+      - name: Download deregister_old_ami_by_app.sh script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.toolkit_version }}"
+          echo "Downloading deregister_old_ami_by_app.sh script from toolkit version $TOOLKIT_VERSION..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/ami/deregister_old_ami_by_app.sh -O deregister_old_ami_by_app.sh
+          chmod +x deregister_old_ami_by_app.sh
+          echo "deregister_old_ami_by_app.sh downloaded and made executable."
+
+      - name: Run Deregister AMI Script
+        run: |
+          ./deregister_old_ami_by_app.sh \
+            --region "${{ inputs.work_region }}" \
+            --keep-history "${{ inputs.keep_history }}" \
+            --limit "${{ inputs.limit }}"
+
+      - name: Confirm Completion
+        run: echo "Deregister Old AMIs workflow completed successfully."
