@@ -129,16 +129,16 @@ locals {
     contains(keys(local.user_data_config), "ami_regions") ? local.user_data_config.ami_regions : []
   )
 
-  shared_accounts = (
-    contains(keys(local.user_data_config), "shared_accounts") ? local.user_data_config.shared_accounts : []
+  share_accounts = (
+    contains(keys(local.user_data_config), "share_accounts") ? local.user_data_config.share_accounts : []
   )
 
   ami_accounts = (
-    contains(keys(local.user_data_config), "ami_accounts") ? local.user_data_config.ami_accounts : local.shared_accounts
+    contains(keys(local.user_data_config), "ami_accounts") ? local.user_data_config.ami_accounts : local.share_accounts
   )
 
   snapshot_accounts = (
-    contains(keys(local.user_data_config), "snapshot_accounts") ? local.user_data_config.snapshot_accounts : local.shared_accounts
+    contains(keys(local.user_data_config), "snapshot_accounts") ? local.user_data_config.snapshot_accounts : local.share_accounts
   )
 
   # Compute playbook_base_url based on precedence
