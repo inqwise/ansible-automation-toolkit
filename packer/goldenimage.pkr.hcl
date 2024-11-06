@@ -129,8 +129,16 @@ locals {
     contains(keys(local.user_data_config), "ami_regions") ? local.user_data_config.ami_regions : []
   )
 
+  shared_accounts = (
+    contains(keys(local.user_data_config), "shared_accounts") ? local.user_data_config.shared_accounts : []
+  )
+
   ami_accounts = (
-    contains(keys(local.user_data_config), "ami_accounts") ? local.user_data_config.ami_accounts : []
+    contains(keys(local.user_data_config), "ami_accounts") ? local.user_data_config.ami_accounts : local.shared_accounts
+  )
+
+  snapshot_accounts = (
+    contains(keys(local.user_data_config), "snapshot_accounts") ? local.user_data_config.snapshot_accounts : local.shared_accounts
   )
 
   # Compute playbook_base_url based on precedence
@@ -199,6 +207,7 @@ source "amazon-ebs" "common" {
   region                = local.aws_run_region
   ami_regions           = local.ami_regions
   ami_users             = local.ami_accounts
+  snapshot_users        = local.snapshot_accounts
   encrypt_boot          = false
   profile               = var.aws_profile
   iam_instance_profile  = var.aws_iam_instance_profile
