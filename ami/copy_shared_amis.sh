@@ -168,7 +168,7 @@ SOURCE_AMIS=$(eval "$FETCH_SOURCE_AMIS")
 # Check if source AMI details were fetched successfully
 if [[ -z "$SOURCE_AMIS" || "$SOURCE_AMIS" == "[]" ]]; then
   echo "No AMIs found in source region $SOURCE_REGION for account $SOURCE_ACCOUNT_ID."
-  exit 1
+  exit 0
 fi
 
 # Display source AMI details
