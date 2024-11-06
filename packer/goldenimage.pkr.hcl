@@ -202,7 +202,7 @@ source "amazon-ebs" "common" {
   force_deregister      = true
   force_delete_snapshot = true
   ami_name              = "${var.app}-${var.tag}"
-  ami_description       = "Image of ${var.app} version ${var.tag}"
+  ami_description       = "Image of ${var.app} version ${var.tag} timestamp ${local.timestamp}"
   spot_instance_types   = [local.instance_types[var.cpu_arch]]
   region                = local.aws_run_region
   ami_regions           = local.ami_regions

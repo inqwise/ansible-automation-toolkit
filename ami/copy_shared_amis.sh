@@ -24,6 +24,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Path to deregister_ami.sh
 DEREGISTER_SCRIPT="$SCRIPT_DIR/deregister_ami.sh"
 
+# Regex to capture metadata from the description
+DESCRIPTION_REGEX="^Image of ([a-z\-]+) version ([a-zA-Z\-\.0-9]+)( timestamp ([0-9]+))?$"
+
 # Help message function
 show_help() {
   echo "Usage: $0 --source-region <SOURCE_REGION> --region <TARGET_REGION> [--source-account-id <SOURCE_ACCOUNT_ID>] [--profile <PROFILE>] [--limit <LIMIT>] [--source-kms-key-id <KMS_KEY_ID>] [--toolkit-version <TOOLKIT_VERSION>]"
@@ -244,7 +247,6 @@ while read -r ami; do
   name=$(echo "$ami" | jq -r '.Name')
   image_id=$(echo "$ami" | jq -r '.ImageId')
   description=$(echo "$ami" | jq -r '.Description')
-  tags=$(echo "$ami" | jq -c '.Tags')
 
   # Check if an AMI with the same name already exists in the target region
   existing_ami=$(aws ec2 describe-images \
@@ -291,16 +293,40 @@ while read -r ami; do
   # ============================
 
   # Parse the tags JSON array
-  existing_tags=$(echo "$tags" | jq -c '.[]')
+  
+  # Try to match the description with the regex
+  if [[ $description =~ $DESCRIPTION_REGEX ]]; then
+    # Extract matched groups
+    app="${BASH_REMATCH[1]}"
+    version="${BASH_REMATCH[2]}"
+    timestamp="${BASH_REMATCH[4]}"
 
-  # Prepare tags for the new AMI
-  # Start with existing tags
-  declare -a tags_array=()
-  while IFS= read -r tag; do
-    key=$(echo "$tag" | jq -r '.Key')
-    value=$(echo "$tag" | jq -r '.Value')
-    tags_array+=("Key=$key,Value=$value")
-  done <<< "$(echo "$existing_tags")"
+    # Validate required fields
+    if [[ -z "$app" || -z "$version" ]]; then
+      echo "Error: Missing required fields in description for AMI ID $ami_id. 'app' and 'version' must be present."
+      exit 1
+    fi
+
+    # Prepare tags based on extracted fields
+    declare -a tags_array=()
+    tags_array+=("Key=Name,Value=${app}-${version}")
+    tags_array+=("Key=app,Value=$app")
+    tags_array+=("Key=version,Value=$version")
+
+    # Only add timestamp if it's available
+    if [[ -n "$timestamp" ]]; then
+      tags_array+=("Key=timestamp,Value=$timestamp")
+    fi
+
+    # Display generated tags
+    echo "Generated tags for AMI ID $ami_id:"
+    for tag in "${tags_array[@]}"; do
+      echo "  $tag"
+    done
+  else
+    echo "Error: Description format does not match expected pattern for AMI ID $ami_id."
+    exit 1
+  fi
 
   # Add amm:source_ami tag
   tags_array+=("Key=${TAG_PREFIX}source_ami,Value=$image_id")

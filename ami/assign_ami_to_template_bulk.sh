@@ -112,6 +112,41 @@ fi
 echo "Processed AMIs:"
 echo "$processed" | jq .
 
+# Apply Tags for related snapshots
+
+# Define predefined tag keys
+PREDEFINED_TAG_KEYS=("Name" "timestamp" "version" "app")
+
+echo "Filtering predefined tags and tagging snapshots..."
+
+echo "$processed" | jq -c '.[]' | while IFS= read -r ami; do
+    ami_id=$(echo "$ami" | jq -r '.id')
+    
+    # Retrieve AMI tags
+    if [[ -n "$PROFILE" ]]; then
+        tags=$(aws ec2 describe-tags --profile "$PROFILE" --region "$REGION" --filters "Name=resource-id,Values=$ami_id" --query 'Tags' --output json)
+    else
+        tags=$(aws ec2 describe-tags --region "$REGION" --filters "Name=resource-id,Values=$ami_id" --query 'Tags' --output json)
+    fi
+    
+    # Filter tags to predefined keys
+    filtered_tags=$(echo "$tags" | jq -c --argjson keys "$(printf '%s\n' "${PREDEFINED_TAG_KEYS[@]}" | jq -R . | jq -s .)" '[.[] | select(.Key as $k | $keys | index($k))]')
+    
+    # Get snapshot IDs from AMI's block device mappings
+    snapshot_ids=$(aws ec2 describe-images --image-ids "$ami_id" --region "$REGION" --query 'Images[].BlockDeviceMappings[].Ebs.SnapshotId' --output text)
+    
+    # Tag snapshots with filtered tags
+    for snapshot_id in $snapshot_ids; do
+        if [[ -n "$PROFILE" ]]; then
+            aws ec2 create-tags --profile "$PROFILE" --region "$REGION" --resources "$snapshot_id" \
+                --tags $(echo "$filtered_tags" | jq -r '.[] | "Key=\(.Key),Value=\(.Value)"' | paste -sd ' ')
+        else
+            aws ec2 create-tags --region "$REGION" --resources "$snapshot_id" \
+                --tags $(echo "$filtered_tags" | jq -r '.[] | "Key=\(.Key),Value=\(.Value)"' | paste -sd ' ')
+        fi
+    done
+done
+
 # Handle skipped items
 echo "Tagging skipped AMIs..."
 echo "$processed" | jq -c '.[] | select(.template_action == "skip")' | while IFS= read -r item; do
