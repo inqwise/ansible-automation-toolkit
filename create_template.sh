@@ -47,14 +47,11 @@ USER_DATA_URL="https://raw.githubusercontent.com/inqwise/ansible-automation-tool
 USER_DATA_FILE="userdata.sh"
 IAM_INSTANCE_PROFILE_NAME="bootstrap-role"  # IAM instance profile
 
-# Download the user data file from the URL
-echo "Downloading user data file from $USER_DATA_URL"
-curl -s -o "$USER_DATA_FILE" "$USER_DATA_URL"
-
-# Check if user data file was downloaded and is not empty
+# Check if user data file exist
 if [[ ! -s "$USER_DATA_FILE" ]]; then
-  echo "Failed to download or empty user data file."
-  exit 1
+  # Download the user data file from the URL
+  echo "Downloading user data file from $USER_DATA_URL"
+  curl -s -o "$USER_DATA_FILE" "$USER_DATA_URL"
 fi
 
 # Search for the latest AMI based on the template name
