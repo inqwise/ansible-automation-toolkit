@@ -63,7 +63,7 @@ template_info=$(aws ec2 describe-launch-templates \
 # Check if the template exists
 if [ -z "$template_info" ]; then
   echo "Launch template with name $template_name not found."
-  exit 0
+  exit 1
 fi
 
 # Create a new version of the launch template with the updated AMI ID

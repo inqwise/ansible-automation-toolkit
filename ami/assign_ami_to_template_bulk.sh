@@ -183,6 +183,67 @@ else
     echo "Using remote update_template_ami.sh script."
 fi
 
+# Function to update template and determine tag value
+update_and_determine_tag() {
+    local template_name="$1"
+    local new_ami_id="$2"
+    local version_description="$3"
+
+    echo "Updating template '$template_name' with AMI '$new_ami_id' (Version: $version_description)..."
+
+    # Execute the update script and capture output
+    update_output=$(bash "$UPDATE_SCRIPT" -t "$template_name" -a "$new_ami_id" -d "$version_description" -r "$REGION" ${PROFILE:+-p "$PROFILE"} ${MAKE_DEFAULT_VERSION:+-m} 2>&1)
+
+    # Print the output
+    echo "$update_output"
+
+    # Extract the last line of the output
+    last_line=$(echo "$update_output" | tail -n 1)
+
+    # Initialize template_exist to true
+    template_exist=true
+
+    # Check if the last line starts with "Launch template with name "
+    if [[ $last_line == Launch\ template\ with\ name\ * ]]; then
+        template_exist=false
+        echo "Exception caught: Launch template with name detected. Setting template_exist=false."
+    else
+        echo "Template update successful. Setting template_exist=true."
+    fi
+
+    # Determine tag value based on template_exist
+    if [ "$template_exist" = true ]; then
+        tag_value="assigned"
+    else
+        tag_value="notexist"
+    fi
+
+    echo "Tagging AMI '$new_ami_id' as '$tag_value'..."
+
+    # Apply the conditional tag
+    if [[ -n "$PROFILE" ]]; then
+        aws ec2 create-tags \
+            --profile "$PROFILE" \
+            --region "$REGION" \
+            --resources "$new_ami_id" \
+            --tags Key=amm:template_status,Value="$tag_value"
+    else
+        aws ec2 create-tags \
+            --region "$REGION" \
+            --resources "$new_ami_id" \
+            --tags Key=amm:template_status,Value="$tag_value"
+    fi
+
+    # Optional: Handle actions based on template_exist
+    if [ "$template_exist" = false ]; then
+        echo "Template does not exist for AMI '$new_ami_id'. You may need to create it before proceeding."
+        # Add additional logic here if necessary
+    else
+        echo "Template exists for AMI '$new_ami_id'. Proceeding with the next steps."
+        # Continue with the rest of your script if needed
+    fi
+}
+
 # Assign and tag assigned AMIs
 echo "Assigning AMIs..."
 echo "$assign_items" | while IFS= read -r item; do
@@ -190,36 +251,8 @@ echo "$assign_items" | while IFS= read -r item; do
     new_ami_id=$(echo "$item" | jq -r '.id')
     version_description=$(echo "$item" | jq -r '.version')
 
-    echo "Updating template '$template_name' with AMI '$new_ami_id' (Version: $version_description)..."
-    if $MAKE_DEFAULT_VERSION; then
-        bash "$UPDATE_SCRIPT" -t "$template_name" -a "$new_ami_id" -d "$version_description" -r "$REGION" -p "$PROFILE" -m
-    else
-        if [[ -n "$PROFILE" ]]; then
-            bash "$UPDATE_SCRIPT" -t "$template_name" -a "$new_ami_id" -d "$version_description" -r "$REGION" -p "$PROFILE"
-        else
-            bash "$UPDATE_SCRIPT" -t "$template_name" -a "$new_ami_id" -d "$version_description" -r "$REGION"
-        fi
-    fi
-
-    # Check if the update script succeeded
-    if [[ $? -ne 0 ]]; then
-        echo "Error: update_template_ami.sh failed for template '$template_name' with AMI '$new_ami_id'. Exiting."
-        exit 1
-    fi
-
-    echo "Tagging AMI '$new_ami_id' as 'assigned'..."
-    if [[ -n "$PROFILE" ]]; then
-        aws ec2 create-tags \
-            --profile "$PROFILE" \
-            --region "$REGION" \
-            --resources "$new_ami_id" \
-            --tags Key=amm:template_status,Value=assigned
-    else
-        aws ec2 create-tags \
-            --region "$REGION" \
-            --resources "$new_ami_id" \
-            --tags Key=amm:template_status,Value=assigned
-    fi
+    # Call the function to update template and tag AMI
+    update_and_determine_tag "$template_name" "$new_ami_id" "$version_description"
 done
 
 echo "AMI assignment and tagging completed successfully."
