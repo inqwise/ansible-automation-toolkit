@@ -143,7 +143,12 @@
           tags: configuration
       tags: configuration
       vars: 
-        discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+        discord_webhook: >-
+          {{
+            discord_webhooks.deploy | default(discord_webhooks.default)
+            if discord_webhooks is defined
+            else discord_webhook
+          }}
 
     rescue:
       - name: Insure that ansible_failed_result or ansible_failed_task defined (Workaround for known bug)
@@ -158,7 +163,12 @@
             tags: configuration
         tags: configuration
         vars: 
-          discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+          discord_webhook: >-
+            {{
+              discord_webhooks.deploy | default(discord_webhooks.default)
+              if discord_webhooks is defined
+              else discord_webhook
+            }}
       
       - name: re-raise the error
         ansible.builtin.fail:
