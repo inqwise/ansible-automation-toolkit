@@ -76,6 +76,7 @@
         users: &users "{{ access.users }}"
         users_group_list: *groups
         users_user_list: *users
+      when: access.users_groups is defined and access.users is defined
       tags: 
         - installation
         - configuration
