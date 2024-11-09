@@ -99,6 +99,7 @@
       ansible.builtin.debug:
         msg: "internal_base_url is undefined."
       when: internal_base_url is undefined
+      tags: configuration
 
     - name: Telegraf
       ansible.builtin.include_role:
@@ -137,25 +138,31 @@
       when: notify_aws_postactions | default(false)
       tags: configuration
 
+    - name: Define message webhook
+      ansible.builtin.set_fact:
+        discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+        when: discord_webhook is undefined or discord_webhooks is defined
+      tags: configuration
+
     - name: Send success message
       ansible.builtin.include_role:
         name: discord
         apply:
           tags: configuration
       tags: configuration
-      vars: 
-        discord_webhook: >-
-          {{
-            discord_webhooks.deploy | default(discord_webhooks.default)
-            if discord_webhooks is defined
-            else discord_webhook
-          }}
 
     rescue:
       - name: Insure that ansible_failed_result or ansible_failed_task defined (Workaround for known bug)
         set_fact:
           ansible_failed_result: "Operation failed due to a missing file. Please check the logs for detailed information."
         when: not (ansible_failed_result is defined or ansible_failed_task is defined)
+        tags: always
+
+      - name: Define message webhook
+        ansible.builtin.set_fact:
+          discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
+          when: discord_webhook is undefined or discord_webhooks is defined
+        tags: configuration
 
       - name: Send fail message
         ansible.builtin.include_role:
@@ -163,14 +170,7 @@
           apply:
             tags: configuration
         tags: configuration
-        vars: 
-          discord_webhook: >-
-            {{
-              discord_webhooks.deploy | default(discord_webhooks.default)
-              if discord_webhooks is defined
-              else discord_webhook
-            }}
-      
+        
       - name: re-raise the error
         ansible.builtin.fail:
           msg: "{{ ansible_failed_result.msg | default(ansible_failed_result | to_json) }}"
