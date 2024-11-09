@@ -141,7 +141,7 @@
     - name: Define message webhook
       ansible.builtin.set_fact:
         discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
-      when: discord_webhook is undefined and discord_webhooks is defined
+      when: discord_webhooks is defined
       tags: configuration
 
     - name: Send success message
@@ -161,7 +161,7 @@
       - name: Define message webhook
         ansible.builtin.set_fact:
           discord_webhook: "{{ discord_webhooks.deploy | default(discord_webhooks.default) }}"
-        when: discord_webhook is undefined and discord_webhooks is defined
+        when: discord_webhooks is defined
         tags: configuration
 
       - name: Send fail message
