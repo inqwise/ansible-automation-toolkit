@@ -1,0 +1,76 @@
+name: Cleanup Templates
+
+on:
+  workflow_call:
+    inputs:
+      ROLE:
+        required: true
+        type: string
+      REGION:
+        description: 'AWS Region'
+        required: true
+        type: string
+      KEEP_HISTORY:
+        description: 'Number of recent versions to keep'
+        required: false
+        default: '3'
+        type: string
+      TOOLKIT_VERSION:
+        description: 'Version of the toolkit for script download'
+        required: false
+        default: 'default'
+        type: string
+      DRY_RUN:
+        description: 'Enable dry-run mode'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  cleanup_templates:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "${{ inputs.ROLE }}"
+          aws-region: "${{ inputs.REGION }}"
+
+      - name: Download Cleanup Templates Script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
+          echo "Downloading cleanup_all_templates.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/cleanup_all_templates.sh -O cleanup_all_templates.sh
+          chmod +x cleanup_all_templates.sh
+          echo "cleanup_all_templates.sh downloaded and made executable."
+
+      - name: Execute Cleanup Templates Script
+        run: |
+          SCRIPT_ARGS=""
+          
+          # Append region
+          if [ -n "${{ inputs.REGION }}" ]; then
+            SCRIPT_ARGS+="--region \"${{ inputs.REGION }}\" "
+          fi
+          
+          # Append keep-history
+          SCRIPT_ARGS+="--keep-history \"${{ inputs.KEEP_HISTORY }}\" "
+          
+          # Append dry-run if enabled
+          if [ "${{ inputs.DRY_RUN }}" = true ]; then
+            SCRIPT_ARGS+="--dry-run "
+          fi
+          
+          # Append profile if provided (optional)
+          # Assuming PROFILE is set as an environment variable or AWS CLI is configured appropriately
+          # If you have a specific input for profile, handle it here
+          
+          echo "Running cleanup_all_templates.sh with arguments: $SCRIPT_ARGS"
+          ./cleanup_all_templates.sh $SCRIPT_ARGS
+
+      - name: Confirm Completion
+        run: echo "Cleanup templates workflow completed successfully."
