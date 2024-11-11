@@ -170,9 +170,16 @@ build_cleanup_amis_args() {
   if [ -n "$aws_region" ]; then
     args+=("--region" "$aws_region")
   fi
+  
+  if [ -n "${keep_history:-}" ]; then
+    args+=("--keep-history" "$keep_history")
+  fi
+  
   if [ "$dry_run" = true ]; then
     args+=("--dry-run")
   fi
+
+
   echo "${args[@]}"
 }
 

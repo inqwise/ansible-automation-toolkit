@@ -90,32 +90,46 @@ get_ami_name() {
         --image-ids "$ami_id" --query 'Images[0].Name' --output text
 }
 
+# Function to fetch the 'app' tag from the active AMI
+get_app_tag() {
+    local ami_id="$1"
+    echo "Fetching 'app' tag for AMI: $ami_id" >&2
+    app_tag=$(aws ec2 describe-images $(construct_aws_args) \
+        --image-ids "$ami_id" \
+        --query 'Images[0].Tags[?Key==`app`].Value | [0]' \
+        --output text)
+
+    if [[ -z "$app_tag" || "$app_tag" == "None" ]]; then
+        echo "Error: 'app' tag is missing or empty for AMI: $ami_id" >&2
+        exit 1
+    fi
+
+    echo "App tag value: $app_tag" >&2
+    echo "$app_tag"
+}
+
 # Function to get obsolete AMIs based on the active AMI
 get_obsolete_amis() {
     local active_ami="$1"
+    local app="$2"
     
     echo "Fetching details for active AMI: $active_ami" >&2
     
-    # Get the creation date and name of the active AMI
+    # Get the creation date of the active AMI
     active_ami_data=$(aws ec2 describe-images $(construct_aws_args) \
-        --image-ids "$active_ami" --query 'Images[0].{Name:Name,CreationDate:CreationDate}' --output json)
+        --image-ids "$active_ami" --query 'Images[0].{CreationDate:CreationDate}' --output json)
     
-    active_ami_name=$(echo "$active_ami_data" | jq -r '.Name')
     active_ami_creation_date=$(echo "$active_ami_data" | jq -r '.CreationDate')
     
-    echo "Active AMI Name: $active_ami_name" >&2
     echo "Active AMI Creation Date: $active_ami_creation_date" >&2
     
-    # Extract the prefix from the active AMI name (assuming prefix before first dash)
-    ami_prefix=$(echo "$active_ami_name" | cut -d'-' -f1)
-    
-    echo "Using AMI prefix: ${ami_prefix}*" >&2
-
-    # Fetch all AMIs that start with the same prefix
-    echo "Fetching AMIs with the prefix: ${ami_prefix}*" >&2
+    # Fetch all AMIs that have the 'app' tag equal to the active app
+    echo "Fetching AMIs with tag 'app' equal to: $app" >&2
     matching_amis=$(aws ec2 describe-images $(construct_aws_args) \
-        --owners self --filters "Name=name,Values=${ami_prefix}*" \
-        --query 'Images[*].{ID:ImageId,Name:Name,CreationDate:CreationDate}' --output json)
+        --owners self \
+        --filters "Name=tag:app,Values=$app" \
+        --query 'Images[*].{ID:ImageId,Name:Name,CreationDate:CreationDate}' \
+        --output json)
     
     echo "Total matching AMIs found: $(echo "$matching_amis" | jq length)" >&2
 
@@ -207,21 +221,24 @@ parse_args "$@"
 
 # Get the active AMI for the provided template
 active_ami=$(get_active_ami_for_template)
-if [[ -n "$active_ami" ]]; then
+if [[ -n "$active_ami" && "$active_ami" != "None" ]]; then
     ami_name=$(get_ami_name "$active_ami")
     echo "Active AMI for template $TEMPLATE_NAME: $ami_name ($active_ami)" >&2
+
+    # Get the 'app' tag from the active AMI
+    app=$(get_app_tag "$active_ami")
+
+    # Get obsolete AMIs based on the active AMI and 'app' tag
+    obsolete_amis=$(get_obsolete_amis "$active_ami" "$app")
+
+    # Print and delete the AMIs
+    if [[ $(echo "$obsolete_amis" | jq length) -gt "$KEEP_HISTORY" ]]; then
+        echo "$obsolete_amis" | jq -r '.[] | "\(.Name) (\(.ID))"' >&2
+        delete_obsolete_amis "$obsolete_amis"
+    else
+        echo "No obsolete AMIs to delete." >&2
+    fi
 else
     echo "No active AMI found for template: $TEMPLATE_NAME" >&2
     exit 1
-fi
-
-# Get obsolete AMIs based on the active AMI
-obsolete_amis=$(get_obsolete_amis "$active_ami")
-
-# Print and delete the AMIs
-if [[ $(echo "$obsolete_amis" | jq length) -gt "$KEEP_HISTORY" ]]; then
-    echo "$obsolete_amis" | jq -r '.[] | "\(.Name) (\(.ID))"' >&2
-    delete_obsolete_amis "$obsolete_amis"
-else
-    echo "No obsolete AMIs to delete." >&2
 fi

@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Default Variables
-PROFILE="default"  # AWS CLI profile
+PROFILE=""  # AWS CLI profile (optional)
 HOSTED_ZONE_NAME=""
 DRY_RUN=false
 
@@ -12,10 +12,14 @@ usage() {
     echo ""
     echo "Options:"
     echo "  -z, --zone         Hosted Zone name (optional; if not provided, all zones will be processed)"
-    echo "  -p, --profile      AWS CLI profile (default: 'default')"
+    echo "  -p, --profile      AWS CLI profile (optional; if not provided, the default profile is used)"
     echo "      --dry-run      Dry run mode, shows what would be deleted"
     exit 1
 }
+
+# Check for required dependencies
+command -v aws >/dev/null 2>&1 || { echo "AWS CLI is required but not installed. Aborting."; exit 1; }
+command -v jq >/dev/null 2>&1 || { echo "jq is required but not installed. Aborting."; exit 1; }
 
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
@@ -25,7 +29,7 @@ while [[ "$#" -gt 0 ]]; do
             shift
             ;;
         -p|--profile)
-            PROFILE="$2"
+            PROFILE="--profile $2"
             shift
             ;;
         --dry-run)
@@ -41,28 +45,30 @@ done
 
 # Function to get all hosted zone IDs if no specific zone is provided
 get_all_hosted_zone_ids() {
-    aws route53 list-hosted-zones --profile "$PROFILE" --query "HostedZones[].{Id:Id,Name:Name}" --output json | jq -r '.[] | "\(.Id | split("/")[2]) \(.Name)"'
+    aws route53 list-hosted-zones $PROFILE --query "HostedZones[].{Id:Id,Name:Name}" --output json | \
+    jq -r '.[] | "\(.Id | split("/")[2]) \(.Name)"'
 }
 
 # Function to get the hosted zone ID by name
 get_hosted_zone_id() {
-    local zone_name=$1
-    aws route53 list-hosted-zones --profile "$PROFILE" --query "HostedZones[?Name == '${zone_name}'].Id" --output text | cut -d'/' -f3
+    local zone_name="${1%?}."  # Ensure zone name ends with a dot
+    aws route53 list-hosted-zones $PROFILE --query "HostedZones[?Name == '${zone_name}'].Id" --output text | cut -d'/' -f3
 }
 
-# Function to delete records containing '*-test*'
+# Function to delete records containing '-test'
 delete_test_records() {
-    local hosted_zone_id=$1
-    local record_name=$2
-    local record_type=$3
-    local ttl=$4
-    local resource_records=$5
+    local hosted_zone_id="$1"
+    local record_name="$2"
+    local record_type="$3"
+    local ttl="$4"
+    local resource_records="$5"
 
     echo "Deleting record: $record_name of type $record_type from Hosted Zone ID: $hosted_zone_id"
 
     if [ "$DRY_RUN" = false ]; then
-        # Prepare JSON for deletion
-        cat > change-batch.json << EOF
+        # Create a temporary file for the change batch
+        temp_file=$(mktemp)
+        cat > "$temp_file" << EOF
 {
     "Changes": [
         {
@@ -81,11 +87,11 @@ EOF
         # Delete the record
         aws route53 change-resource-record-sets \
             --hosted-zone-id "$hosted_zone_id" \
-            --change-batch file://change-batch.json \
-            --profile "$PROFILE"
+            --change-batch "file://$temp_file" \
+            $PROFILE
 
         # Clean up
-        rm -f change-batch.json
+        rm -f "$temp_file"
     else
         echo "Dry run: $record_name of type $record_type from Hosted Zone ID: $hosted_zone_id would have been deleted."
     fi
@@ -93,20 +99,20 @@ EOF
 
 # Function to process all records in a hosted zone that match '-test'
 process_zone_records() {
-    local hosted_zone_id=$1
-    local hosted_zone_name=$2
+    local hosted_zone_id="$1"
+    local hosted_zone_name="$2"
 
     echo "Fetching Route 53 records for hosted zone: $hosted_zone_name ($hosted_zone_id)..."
-    records=$(aws route53 list-resource-record-sets --hosted-zone-id "$hosted_zone_id" --profile "$PROFILE" --query 'ResourceRecordSets[?contains(Name, `-test`)]' --output json)
+    records=$(aws route53 list-resource-record-sets --hosted-zone-id "$hosted_zone_id" $PROFILE --query 'ResourceRecordSets[?contains(Name, `-test`)]' --output json)
 
-    if [ -z "$records" ]; then
+    if [ "$(echo "$records" | jq length)" -eq 0 ]; then
         echo "No matching records found in hosted zone: $hosted_zone_name"
     else
         echo "$records" | jq -c '.[]' | while read -r record; do
             record_name=$(echo "$record" | jq -r '.Name')
             record_type=$(echo "$record" | jq -r '.Type')
             ttl=$(echo "$record" | jq -r '.TTL')
-            resource_records=$(echo "$record" | jq -r '.ResourceRecords')
+            resource_records=$(echo "$record" | jq -c '.ResourceRecords')
 
             if [[ "$resource_records" == "null" ]]; then
                 echo "Skipping alias or incomplete record: $record_name"
