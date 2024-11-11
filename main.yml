@@ -49,7 +49,7 @@
 
     - name: Initialize empty access.users_groups if not defined
       ansible.builtin.set_fact:
-        access: "{{ access | combine({'users_groups': {}}) }}"
+        access: "{{ access | combine({'users_groups': []}) }}"
       when: access.users_groups is not defined
       tags: always
 
