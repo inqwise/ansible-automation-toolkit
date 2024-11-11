@@ -12,18 +12,15 @@ on:
         type: string
       KEEP_HISTORY:
         description: 'Number of recent versions to keep'
-        required: false
-        default: '3'
+        required: true
         type: string
       TOOLKIT_VERSION:
         description: 'Version of the toolkit for script download'
-        required: false
-        default: 'default'
+        required: true
         type: string
       DRY_RUN:
         description: 'Enable dry-run mode'
-        required: false
-        default: 'false'
+        required: true
         type: boolean
 
 jobs:
@@ -74,3 +71,4 @@ jobs:
 
       - name: Confirm Completion
         run: echo "Cleanup templates workflow completed successfully."
+        
