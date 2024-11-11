@@ -70,6 +70,11 @@ jobs:
             SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
           fi
           
+          # Append dry-run if enabled
+          if [ "${{ inputs.DRY_RUN }}" = true ]; then
+            SCRIPT_ARGS+="--dry-run "
+          fi
+
           echo "Running cleanup_test_volumes.sh with arguments: $SCRIPT_ARGS"
           ./cleanup_test_volumes.sh $SCRIPT_ARGS
 
@@ -88,6 +93,11 @@ jobs:
           # Append region
           if [ -n "${{ inputs.REGION }}" ]; then
             SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
+          fi
+
+          # Append dry-run if enabled
+          if [ "${{ inputs.DRY_RUN }}" = true ]; then
+            SCRIPT_ARGS+="--dry-run "
           fi
 
           echo "Running terminate_test_intances.sh with arguments: $SCRIPT_ARGS"
