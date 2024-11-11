@@ -1,0 +1,98 @@
+name: Terminate test recources
+
+on:
+  workflow_call:
+    inputs:
+      ROLE:
+        required: true
+        type: string
+      REGION:
+        description: 'AWS Region'
+        required: true
+        type: string
+      TOOLKIT_VERSION:
+        description: 'Version of the toolkit for script download'
+        required: true
+        type: string
+      DRY_RUN:
+        description: 'Enable dry-run mode'
+        required: true
+        type: boolean
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: "${{ inputs.ROLE }}"
+          aws-region: "${{ inputs.REGION }}"
+
+      - name: Download cleanup_test_dns_records Script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
+          echo "Downloading cleanup_all_templates.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/cleanup_test_dns_records.sh -O cleanup_test_dns_records.sh
+          chmod +x cleanup_test_dns_records.sh
+          echo "cleanup_test_dns_records.sh downloaded and made executable."
+
+      - name: Execute cleanup_test_dns_records Script
+        run: |
+          SCRIPT_ARGS=""
+          
+          # Append dry-run if enabled
+          if [ "${{ inputs.DRY_RUN }}" = true ]; then
+            SCRIPT_ARGS+="--dry-run "
+          fi
+          
+          echo "Running cleanup_test_dns_records.sh with arguments: $SCRIPT_ARGS"
+          ./cleanup_test_dns_records.sh $SCRIPT_ARGS
+
+      - name: Download cleanup_test_volumes Script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
+          echo "Downloading cleanup_test_volumes.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/cleanup_test_volumes.sh -O cleanup_test_volumes.sh
+          chmod +x cleanup_test_volumes.sh
+          echo "cleanup_test_volumes.sh downloaded and made executable."  
+
+      - name: Execute cleanup_test_volumes Script
+        run: |
+          SCRIPT_ARGS=""
+          
+          # Append region
+          if [ -n "${{ inputs.REGION }}" ]; then
+            SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
+          fi
+          
+          echo "Running cleanup_test_volumes.sh with arguments: $SCRIPT_ARGS"
+          ./cleanup_test_volumes.sh $SCRIPT_ARGS
+
+      - name: Download terminate_test_intances Script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
+          echo "Downloading terminate_test_intances.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/terminate_test_intances.sh -O terminate_test_intances.sh
+          chmod +x terminate_test_intances.sh
+          echo "terminate_test_intances.sh downloaded and made executable."  
+
+      - name: Execute terminate_test_intances Script
+        run: |
+          SCRIPT_ARGS=""
+          
+          # Append region
+          if [ -n "${{ inputs.REGION }}" ]; then
+            SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
+          fi
+
+          echo "Running terminate_test_intances.sh with arguments: $SCRIPT_ARGS"
+          ./terminate_test_intances.sh $SCRIPT_ARGS
+  
+      - name: Confirm Completion
+        run: echo "Terminate test recources workflow completed successfully."
+        

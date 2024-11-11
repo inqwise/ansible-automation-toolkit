@@ -4,7 +4,7 @@
 set -euo pipefail
 
 # Variables with default values
-PROFILE="default"
+PROFILE=""
 REGION="us-east-1"
 DRY_RUN="false"
 KEEP_HISTORY=1
@@ -12,11 +12,11 @@ TEMPLATE_NAME=""
 
 # Function to show usage/help
 usage() {
-    echo "Usage: $0 --template <template_name> --profile <profile> --region <region> --keep-history <keep_history> --dry-run"
+    echo "Usage: $0 --template <template_name> [--profile <profile>] [--region <region>] [--keep-history <keep_history>] [--dry-run]"
     echo
     echo "Options:"
     echo "  --template      Launch template name (mandatory)"
-    echo "  --profile       AWS profile to use (default: default)"
+    echo "  --profile       AWS profile to use (optional)"
     echo "  --region        AWS region to use (default: us-east-1)"
     echo "  --keep-history  Number of obsolete AMIs to keep (default: 1)"
     echo "  --dry-run       Enable dry run mode (default: false)"
@@ -63,15 +63,21 @@ parse_args() {
     fi
 }
 
-# Call parse_args to process command-line arguments
-parse_args "$@"
+# Function to construct AWS CLI arguments
+construct_aws_args() {
+    local args=()
+    if [[ -n "$PROFILE" ]]; then
+        args+=(--profile "$PROFILE")
+    fi
+    args+=(--region "$REGION")
+    echo "${args[@]}"
+}
 
 # Function to fetch the active AMI for the provided template
 get_active_ami_for_template() {
     echo "Fetching active AMI for template: $TEMPLATE_NAME..." >&2
     aws ec2 describe-launch-template-versions \
-        --profile "$PROFILE" \
-        --region "$REGION" \
+        $(construct_aws_args) \
         --launch-template-name "$TEMPLATE_NAME" \
         --query 'LaunchTemplateVersions[?DefaultVersion==`true`].LaunchTemplateData.ImageId' \
         --output text
@@ -80,7 +86,7 @@ get_active_ami_for_template() {
 # Function to fetch AMI name based on the AMI ID
 get_ami_name() {
     local ami_id="$1"
-    aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+    aws ec2 describe-images $(construct_aws_args) \
         --image-ids "$ami_id" --query 'Images[0].Name' --output text
 }
 
@@ -91,7 +97,7 @@ get_obsolete_amis() {
     echo "Fetching details for active AMI: $active_ami" >&2
     
     # Get the creation date and name of the active AMI
-    active_ami_data=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+    active_ami_data=$(aws ec2 describe-images $(construct_aws_args) \
         --image-ids "$active_ami" --query 'Images[0].{Name:Name,CreationDate:CreationDate}' --output json)
     
     active_ami_name=$(echo "$active_ami_data" | jq -r '.Name')
@@ -103,11 +109,11 @@ get_obsolete_amis() {
     # Extract the prefix from the active AMI name (assuming prefix before first dash)
     ami_prefix=$(echo "$active_ami_name" | cut -d'-' -f1)
     
-    echo "Using AMI prefix: $ami_prefix*" >&2
+    echo "Using AMI prefix: ${ami_prefix}*" >&2
 
     # Fetch all AMIs that start with the same prefix
-    echo "Fetching AMIs with the prefix: $ami_prefix*" >&2
-    matching_amis=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+    echo "Fetching AMIs with the prefix: ${ami_prefix}*" >&2
+    matching_amis=$(aws ec2 describe-images $(construct_aws_args) \
         --owners self --filters "Name=name,Values=${ami_prefix}*" \
         --query 'Images[*].{ID:ImageId,Name:Name,CreationDate:CreationDate}' --output json)
     
@@ -132,7 +138,7 @@ delete_obsolete_amis() {
     
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
-        echo "$obsolete_amis" | jq -r --argjson keep "$total_to_delete" '.[0:$keep] | .[] | "\(.Name) (\(.ID))"' | while read ami_info; do
+        echo "$obsolete_amis" | jq -r '.[] | "\(.Name) (\(.ID))"' | while read ami_info; do
             ami_id=$(echo "$ami_info" | awk -F'[()]' '{print $2}')
             ami_name=$(echo "$ami_info" | awk -F'[()]' '{print $1}')
             
@@ -140,7 +146,7 @@ delete_obsolete_amis() {
                 echo "Preparing to delete AMI: $ami_name ($ami_id)" >&2
                 
                 # Fetch associated snapshots and store in variable
-                snapshot_ids=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+                snapshot_ids=$(aws ec2 describe-images $(construct_aws_args) \
                     --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
 
                 # Store snapshots in an array
@@ -157,14 +163,14 @@ delete_obsolete_amis() {
 
                 # Deregister the AMI
                 echo "Deregistering AMI: $ami_name ($ami_id)" >&2
-                if aws ec2 deregister-image --profile "$PROFILE" --region "$REGION" --image-id "$ami_id"; then
+                if aws ec2 deregister-image $(construct_aws_args) --image-id "$ami_id"; then
                     echo "Successfully deregistered AMI: $ami_name ($ami_id)" >&2
 
                     # Delete the associated snapshots after successful deregistration
                     if [[ ${#snapshot_array[@]} -gt 0 ]]; then
                         for snapshot_id in "${snapshot_array[@]}"; do
                             echo "Deleting snapshot: $snapshot_id associated with AMI: $ami_id" >&2
-                            aws ec2 delete-snapshot --profile "$PROFILE" --region "$REGION" --snapshot-id "$snapshot_id"
+                            aws ec2 delete-snapshot $(construct_aws_args) --snapshot-id "$snapshot_id"
                         done
                     else
                         echo "No snapshots to delete for AMI: $ami_id" >&2
@@ -176,7 +182,7 @@ delete_obsolete_amis() {
                 echo "DRY RUN: Would delete AMI: $ami_name ($ami_id)" >&2
 
                 # Print snapshot IDs for dry run
-                snapshot_ids=$(aws ec2 describe-images --profile "$PROFILE" --region "$REGION" \
+                snapshot_ids=$(aws ec2 describe-images $(construct_aws_args) \
                     --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
                 
                 if [[ -n "$snapshot_ids" && "$snapshot_ids" != "None" ]]; then
@@ -192,6 +198,9 @@ delete_obsolete_amis() {
         echo "No obsolete AMIs to delete." >&2
     fi
 }
+
+# Call parse_args to process command-line arguments
+parse_args "$@"
 
 # Main
 # echo "Profile: $PROFILE, Region: $REGION, DRY_RUN: $DRY_RUN, Keep History: $KEEP_HISTORY" >&2
