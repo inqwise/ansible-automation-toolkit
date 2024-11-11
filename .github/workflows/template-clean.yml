@@ -51,11 +51,11 @@ jobs:
           
           # Append region
           if [ -n "${{ inputs.REGION }}" ]; then
-            SCRIPT_ARGS+="--region \"${{ inputs.REGION }}\" "
+            SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
           fi
           
           # Append keep-history
-          SCRIPT_ARGS+="--keep-history \"${{ inputs.KEEP_HISTORY }}\" "
+          SCRIPT_ARGS+="--keep-history ${{ inputs.KEEP_HISTORY }} "
           
           # Append dry-run if enabled
           if [ "${{ inputs.DRY_RUN }}" = true ]; then
