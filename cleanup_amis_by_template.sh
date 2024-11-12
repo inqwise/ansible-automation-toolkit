@@ -18,7 +18,7 @@ usage() {
     echo "  --template      Launch template name (mandatory)"
     echo "  --region        AWS region to use (mandatory)"
     echo "  --profile       AWS profile to use (optional)"
-    echo "  --keep-history  Number of obsolete AMIs to keep (default: 1)"
+    echo "  --keep-history  Total number of AMIs to keep including the active AMI (default: 1)"
     echo "  --dry-run       Enable dry run mode (default: false)"
     exit 1
 }
@@ -133,17 +133,17 @@ get_current_account_id() {
 get_obsolete_amis() {
     local active_ami="$1"
     local app="$2"
-    
+
     echo "Fetching details for active AMI: $active_ami" >&2
-    
+
     # Get the creation date of the active AMI
     active_ami_data=$(aws ec2 describe-images $(construct_aws_args) \
         --image-ids "$active_ami" --query 'Images[0].{CreationDate:CreationDate}' --output json)
-    
+
     active_ami_creation_date=$(echo "$active_ami_data" | jq -r '.CreationDate')
-    
+
     echo "Active AMI Creation Date: $active_ami_creation_date" >&2
-    
+
     # Fetch all AMIs that have the 'app' tag equal to the active app
     echo "Fetching AMIs with tag 'app' equal to: $app" >&2
     matching_amis=$(aws ec2 describe-images $(construct_aws_args) \
@@ -151,12 +151,14 @@ get_obsolete_amis() {
         --filters "Name=tag:app,Values=$app" \
         --query 'Images[*].{ID:ImageId,Name:Name,CreationDate:CreationDate}' \
         --output json)
-    
+
     echo "Total matching AMIs found: $(echo "$matching_amis" | jq length)" >&2
 
-    # Filter out active AMI and AMIs newer than the active AMI
-    obsolete_amis=$(echo "$matching_amis" | jq --arg active_ami "$active_ami" --arg active_date "$active_ami_creation_date" '
-    .[] | select(.ID != $active_ami and .CreationDate < $active_date)' | jq -s 'sort_by(.CreationDate)')
+    # Filter out AMIs newer than or equal to the active AMI
+    obsolete_amis=$(echo "$matching_amis" | jq --arg active_date "$active_ami_creation_date" '
+    sort_by(.CreationDate) |
+    reverse |
+    .[] | select(.CreationDate < $active_date)' | jq -s '.')
 
     # Log details of the obsolete AMIs
     echo "Obsolete AMIs found: $(echo "$obsolete_amis" | jq length)" >&2
@@ -169,20 +171,29 @@ get_obsolete_amis() {
 # Function to delete obsolete AMIs and their snapshots
 delete_obsolete_amis() {
     local obsolete_amis="$1"
-    total_to_delete=$(($(echo "$obsolete_amis" | jq length) - $KEEP_HISTORY - 1)) # an additional one is active
-    
+    local total_matching=$(echo "$obsolete_amis" | jq length)
+    local total_to_keep="$KEEP_HISTORY"
+
+    # Ensure KEEP_HISTORY is at least 1
+    if [[ "$total_to_keep" -lt 1 ]]; then
+        echo "KEEP_HISTORY must be at least 1 to include the active AMI." >&2
+        exit 1
+    fi
+
+    total_to_delete=$((total_matching - total_to_keep))
+
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
         # Only process the number of AMIs to delete based on KEEP_HISTORY
-        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq -r ". | reverse | .[$KEEP_HISTORY:]")
+        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq -r ". | reverse | .[$total_to_keep:]")
 
         echo "$AMIS_TO_DELETE" | jq -r '.[] | "\(.Name) (\(.ID))"' | while read ami_info; do
             ami_id=$(echo "$ami_info" | awk -F'[()]' '{print $2}')
             ami_name=$(echo "$ami_info" | awk -F'[()]' '{print $1}')
-            
+
             if [[ "$DRY_RUN" == "false" ]]; then
                 echo "Preparing to delete AMI: $ami_name ($ami_id)" >&2
-                
+
                 # Fetch associated snapshots and store in variable
                 snapshot_ids=$(aws ec2 describe-images $(construct_aws_args) \
                     --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
@@ -222,7 +233,7 @@ delete_obsolete_amis() {
                 # Print snapshot IDs for dry run
                 snapshot_ids=$(aws ec2 describe-images $(construct_aws_args) \
                     --image-ids "$ami_id" --query 'Images[0].BlockDeviceMappings[*].Ebs.SnapshotId' --output text)
-                
+
                 if [[ -n "$snapshot_ids" && "$snapshot_ids" != "None" ]]; then
                     for snapshot_id in $snapshot_ids; do
                         echo "DRY RUN: Would delete snapshot: $snapshot_id associated with AMI: $ami_id" >&2
