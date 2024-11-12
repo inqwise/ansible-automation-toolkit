@@ -169,7 +169,7 @@ get_obsolete_amis() {
 # Function to delete obsolete AMIs and their snapshots
 delete_obsolete_amis() {
     local obsolete_amis="$1"
-    total_to_delete=$(($(echo "$obsolete_amis" | jq length) - $KEEP_HISTORY))
+    total_to_delete=$(($(echo "$obsolete_amis" | jq length) - $KEEP_HISTORY - 1)) # an additional one is active
     
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
