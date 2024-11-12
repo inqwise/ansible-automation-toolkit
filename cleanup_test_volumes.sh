@@ -3,7 +3,7 @@
 set -eu
 
 # Default values for arguments
-PROFILE="default"
+PROFILE=""
 DRY_RUN=false
 NAME_PATTERN="*-test*"
 
@@ -12,9 +12,9 @@ usage() {
     echo "Usage: $0 [options]"
     echo ""
     echo "Options:"
-    echo "  --profile PROFILE         AWS CLI profile to use (default: 'default')"
-    echo "  --region REGION           (Required) AWS region to use"
-    echo "  --dry-run                 Enable dry-run mode (default: enabled)"
+    echo "  --profile PROFILE         AWS CLI profile to use (optional)"
+    echo "  --region REGION           AWS region to use (required)"
+    echo "  --dry-run                 Enable dry-run mode (default: disabled)"
     echo "  -h, --help                Display this help message"
     exit 1
 }
@@ -22,19 +22,48 @@ usage() {
 # Parse arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
-        --profile) PROFILE="$2"; shift ;;
-        --region) REGION="$2"; shift ;;
-        --dry-run) DRY_RUN=true ;;
-        -h|--help) usage ;;
-        *) echo "Unknown parameter passed: $1"; usage ;;
+        --profile)
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                PROFILE="$2"
+                shift
+            else
+                echo "Error: --profile requires a non-empty option argument."
+                usage
+            fi
+            ;;
+        --region)
+            if [[ -n "${2:-}" && ! "$2" =~ ^-- ]]; then
+                REGION="$2"
+                shift
+            else
+                echo "Error: --region requires a non-empty option argument."
+                usage
+            fi
+            ;;
+        --dry-run)
+            DRY_RUN=true
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            echo "Unknown parameter passed: $1"
+            usage
+            ;;
     esac
     shift
 done
 
 # Check if region is provided
-if [[ -z "$REGION" ]]; then
+if [[ -z "${REGION:-}" ]]; then
     echo "Error: --region is mandatory."
     usage
+fi
+
+# Construct AWS CLI profile argument if PROFILE is set
+AWS_PROFILE_ARG=()
+if [[ -n "$PROFILE" ]]; then
+    AWS_PROFILE_ARG=(--profile "$PROFILE")
 fi
 
 # Function to delete EBS volumes
@@ -43,7 +72,7 @@ cleanup_ebs_volumes() {
 
     # Get the volume IDs of volumes with name matching the pattern and state 'Available'
     volume_ids=$(aws ec2 describe-volumes \
-        --profile "$PROFILE" \
+        "${AWS_PROFILE_ARG[@]}" \
         --region "$REGION" \
         --filters "Name=tag:Name,Values=$NAME_PATTERN" "Name=status,Values=available" \
         --query "Volumes[*].VolumeId" \
@@ -63,7 +92,7 @@ cleanup_ebs_volumes() {
         else
             echo "Deleting volume $volume_id..."
             aws ec2 delete-volume \
-                --profile "$PROFILE" \
+                "${AWS_PROFILE_ARG[@]}" \
                 --region "$REGION" \
                 --volume-id "$volume_id"
             if [[ $? -eq 0 ]]; then
