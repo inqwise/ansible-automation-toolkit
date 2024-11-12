@@ -66,6 +66,17 @@ parse_args() {
         echo "Error: --region <region> is required" >&2
         usage
     fi
+
+    # Validate that KEEP_HISTORY is a positive integer
+    if ! [[ "$KEEP_HISTORY" =~ ^[0-9]+$ ]]; then
+        echo "Error: --keep-history must be a positive integer" >&2
+        exit 1
+    fi
+
+    if [[ "$KEEP_HISTORY" -lt 1 ]]; then
+        echo "Error: --keep-history must be at least 1 to include the active AMI" >&2
+        exit 1
+    fi
 }
 
 # Function to construct AWS CLI arguments
@@ -171,21 +182,22 @@ get_obsolete_amis() {
 delete_obsolete_amis() {
     local obsolete_amis="$1"
     local total_matching=$(echo "$obsolete_amis" | jq length)
-    local total_to_keep="$KEEP_HISTORY"
+    local adjusted_keep_history=$((KEEP_HISTORY - 1))  # Reduce by 1 to account for active AMI
 
-    # Ensure KEEP_HISTORY is at least 1
-    if [[ "$total_to_keep" -lt 1 ]]; then
-        echo "KEEP_HISTORY must be at least 1 to include the active AMI." >&2
-        exit 1
+    # Ensure adjusted_keep_history is not negative
+    if [[ "$adjusted_keep_history" -lt 0 ]]; then
+        adjusted_keep_history=0
     fi
+
+    local total_to_keep="$adjusted_keep_history"
 
     total_to_delete=$((total_matching - total_to_keep))
 
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
         # Sort obsolete AMIs by CreationDate ascending (oldest first)
-        # and keep the most recent 'KEEP_HISTORY' AMIs
-        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq --argjson keep "$KEEP_HISTORY" '
+        # and keep the most recent 'total_to_keep' AMIs
+        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq --argjson keep "$total_to_keep" '
             sort_by(.CreationDate) |
             reverse |
             .[$keep:]')
