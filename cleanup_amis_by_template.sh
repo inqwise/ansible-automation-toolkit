@@ -154,10 +154,9 @@ get_obsolete_amis() {
 
     echo "Total matching AMIs found: $(echo "$matching_amis" | jq length)" >&2
 
-    # Filter out AMIs newer than or equal to the active AMI
+    # Sort AMIs by CreationDate in ascending order (oldest first)
     obsolete_amis=$(echo "$matching_amis" | jq --arg active_date "$active_ami_creation_date" '
     sort_by(.CreationDate) |
-    reverse |
     .[] | select(.CreationDate < $active_date)' | jq -s '.')
 
     # Log details of the obsolete AMIs
@@ -184,8 +183,12 @@ delete_obsolete_amis() {
 
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
-        # Only process the number of AMIs to delete based on KEEP_HISTORY
-        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq -r ". | reverse | .[$total_to_keep:]")
+        # Sort obsolete AMIs by CreationDate ascending (oldest first)
+        # and keep the most recent 'KEEP_HISTORY' AMIs
+        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq --argjson keep "$KEEP_HISTORY" '
+            sort_by(.CreationDate) |
+            reverse |
+            .[$keep:]')
 
         echo "$AMIS_TO_DELETE" | jq -r '.[] | "\(.Name) (\(.ID))"' | while read ami_info; do
             ami_id=$(echo "$ami_info" | awk -F'[()]' '{print $2}')
