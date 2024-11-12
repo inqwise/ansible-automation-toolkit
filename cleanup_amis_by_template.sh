@@ -3,21 +3,21 @@
 # Enable strict error handling
 set -euo pipefail
 
-# Variables with default values
+# Variables without default values (since region is now mandatory)
 PROFILE=""
-REGION="us-east-1"
+REGION=""
 DRY_RUN="false"
 KEEP_HISTORY=1
 TEMPLATE_NAME=""
 
 # Function to show usage/help
 usage() {
-    echo "Usage: $0 --template <template_name> [--profile <profile>] [--region <region>] [--keep-history <keep_history>] [--dry-run]"
+    echo "Usage: $0 --template <template_name> --region <region> [--profile <profile>] [--keep-history <keep_history>] [--dry-run]"
     echo
     echo "Options:"
     echo "  --template      Launch template name (mandatory)"
+    echo "  --region        AWS region to use (mandatory)"
     echo "  --profile       AWS profile to use (optional)"
-    echo "  --region        AWS region to use (default: us-east-1)"
     echo "  --keep-history  Number of obsolete AMIs to keep (default: 1)"
     echo "  --dry-run       Enable dry run mode (default: false)"
     exit 1
@@ -51,7 +51,7 @@ parse_args() {
                 usage
                 ;;
             *)
-                echo "Unknown option: $1"
+                echo "Unknown option: $1" >&2
                 usage
                 ;;
         esac
@@ -59,6 +59,11 @@ parse_args() {
 
     if [[ -z "$TEMPLATE_NAME" ]]; then
         echo "Error: --template <template_name> is required" >&2
+        usage
+    fi
+
+    if [[ -z "$REGION" ]]; then
+        echo "Error: --region <region> is required" >&2
         usage
     fi
 }
@@ -108,6 +113,22 @@ get_app_tag() {
     echo "$app_tag"
 }
 
+# Function to get the owner ID of an AMI
+get_ami_owner() {
+    local ami_id="$1"
+    aws ec2 describe-images $(construct_aws_args) \
+        --image-ids "$ami_id" \
+        --query 'Images[0].OwnerId' \
+        --output text
+}
+
+# Function to get the current AWS account ID
+get_current_account_id() {
+    aws sts get-caller-identity $(construct_aws_args) \
+        --query 'Account' \
+        --output text
+}
+
 # Function to get obsolete AMIs based on the active AMI
 get_obsolete_amis() {
     local active_ami="$1"
@@ -152,7 +173,10 @@ delete_obsolete_amis() {
     
     if [ "$total_to_delete" -gt 0 ]; then
         echo "Preparing to delete $total_to_delete obsolete AMIs..." >&2
-        echo "$obsolete_amis" | jq -r '.[] | "\(.Name) (\(.ID))"' | while read ami_info; do
+        # Only process the number of AMIs to delete based on KEEP_HISTORY
+        AMIS_TO_DELETE=$(echo "$obsolete_amis" | jq -r ". | reverse | .[$KEEP_HISTORY:]")
+
+        echo "$AMIS_TO_DELETE" | jq -r '.[] | "\(.Name) (\(.ID))"' | while read ami_info; do
             ami_id=$(echo "$ami_info" | awk -F'[()]' '{print $2}')
             ami_name=$(echo "$ami_info" | awk -F'[()]' '{print $1}')
             
@@ -224,6 +248,20 @@ active_ami=$(get_active_ami_for_template)
 if [[ -n "$active_ami" && "$active_ami" != "None" ]]; then
     ami_name=$(get_ami_name "$active_ami")
     echo "Active AMI for template $TEMPLATE_NAME: $ami_name ($active_ami)" >&2
+
+    # Get the owner ID of the active AMI
+    ami_owner=$(get_ami_owner "$active_ami")
+    echo "Active AMI Owner ID: $ami_owner" >&2
+
+    # Get the current AWS account ID
+    current_account_id=$(get_current_account_id)
+    echo "Current AWS Account ID: $current_account_id" >&2
+
+    # Check if the AMI owner is the current account
+    if [[ "$ami_owner" != "$current_account_id" ]]; then
+        echo "Info: Active AMI ($active_ami) is owned by another account ($ami_owner). Skipping operations." >&2
+        exit 0
+    fi
 
     # Get the 'app' tag from the active AMI
     app=$(get_app_tag "$active_ami")
