@@ -170,17 +170,31 @@ build_cleanup_amis_args() {
   if [ -n "$aws_region" ]; then
     args+=("--region" "$aws_region")
   fi
-  
+
   if [ -n "${keep_history:-}" ]; then
     args+=("--keep-history" "$keep_history")
   fi
-  
+
   if [ "$dry_run" = true ]; then
     args+=("--dry-run")
   fi
 
-
   echo "${args[@]}"
+}
+
+# Function to check if a template has the tag 'amm:SkipClean' set to 'true'
+should_skip_template() {
+  local template_name="$1"
+  # Fetch tags for the specific launch template
+  tags=$(aws ec2 describe-launch-templates --launch-template-names "$template_name" \
+    --query "LaunchTemplates[].Tags[?Key=='amm:SkipClean'].Value[]" --output text $(build_aws_args))
+  
+  # Check if the tag value is 'true' (case-insensitive)
+  if [[ "$tags" =~ ^[Tt][Rr][Uu][Ee]$ ]]; then
+    return 0  # Should skip
+  else
+    return 1  # Should not skip
+  fi
 }
 
 # Find all launch templates
@@ -203,6 +217,12 @@ affected_templates=()
 for template_name in $templates; do
   log "INFO" "Starting cleanup for template: $template_name"
 
+  # Check if the template has the 'amm:SkipClean' tag set to 'true'
+  if should_skip_template "$template_name"; then
+    log "INFO" "Template '$template_name' has tag 'amm:SkipClean=true'. Skipping cleanup."
+    continue  # Skip to the next template
+  fi
+
   if [ "$dry_run" = true ]; then
     # Simulate template cleanup
     log "DRY-RUN" "Would execute: $local_clean_template_script $(build_cleanup_template_args "$template_name")"
@@ -212,7 +232,7 @@ for template_name in $templates; do
     # Execute the cleanup template script
     log "INFO" "Executing local template cleanup for: $template_name"
     "$local_clean_template_script" $(build_cleanup_template_args "$template_name")
-  
+
     if [ $? -eq 0 ]; then
       log "INFO" "Successfully cleaned template: $template_name"
       affected_templates+=("$template_name")

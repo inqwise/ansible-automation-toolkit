@@ -62,10 +62,6 @@ jobs:
             SCRIPT_ARGS+="--dry-run "
           fi
           
-          # Append profile if provided (optional)
-          # Assuming PROFILE is set as an environment variable or AWS CLI is configured appropriately
-          # If you have a specific input for profile, handle it here
-          
           echo "Running cleanup_all_templates.sh with arguments: $SCRIPT_ARGS"
           ./cleanup_all_templates.sh $SCRIPT_ARGS
 
