@@ -12,6 +12,9 @@ echo "account_id:$ACCOUNT_ID"
 METADATA_REQUEST='TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") && curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance'
 
 PLAYBOOK_NAME=$(eval $METADATA_REQUEST/playbook_name)
+if [[ -z "$PLAYBOOK_NAME" ]]; then
+    PLAYBOOK_NAME=$(eval $METADATA_REQUEST/Name)
+fi
 echo "playbook_name:$PLAYBOOK_NAME"
 
 # global parameters
