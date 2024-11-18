@@ -74,20 +74,17 @@ jobs:
 
           echo "AMI assignment process completed."
       
-      - name: Download ami_snapshot_tagging_bulk.sh script
+      - name: Download tag_assigned_snapshot.sh script
         if: inputs.SNAPSHOT_TAGGING
         run: |
           TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
-          echo "Downloading ami_snapshot_tagging_bulk.sh script from toolkit version $TOOLKIT_VERSION..."
-          # TODO: separate from assign_ami_to_template_bulk snapshot tagging logic to ami_snapshot_tagging_bulk script
-          # and download here:
+          
+          echo "Downloading tag_assigned_snapshot.sh script from toolkit version $TOOLKIT_VERSION..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/ami/tag_assigned_snapshot.sh -O tag_assigned_snapshot.sh
+          chmod +x tag_assigned_snapshot.sh
+          echo "tag_assigned_snapshot.sh downloaded and made executable."
 
-          # echo "Downloading ami_snapshot_tagging_bulk.sh script from toolkit version $TOOLKIT_VERSION..."
-          # wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/ami/ami_snapshot_tagging_bulk.sh -O ami_snapshot_tagging_bulk.sh
-          # chmod +x ami_snapshot_tagging_bulk.sh
-          # echo "ami_snapshot_tagging_bulk.sh downloaded and made executable."
-
-      - name: execute ami_snapshot_tagging_bulk script 
+      - name: execute tag_assigned_snapshot script 
         if: inputs.SNAPSHOT_TAGGING     
         run: |
           # Set variables with defaults based on trigger
@@ -99,12 +96,9 @@ jobs:
           echo "Toolkit Version: $TOOLKIT_VERSION"
           
           # Build the command
-          # CMD="./ami_snapshot_tagging_bulk.sh --region \"$REGION\" --toolkit-version \"$TOOLKIT_VERSION\""
+          CMD="./tag_assigned_snapshot.sh --region \"$REGION\" --toolkit-version \"$TOOLKIT_VERSION\""
  
-          # TODO: separate from assign_ami_to_template_bulk snapshot tagging logic to ami_snapshot_tagging_bulk script
-          # and execute here:
+          echo "Executing command: $CMD"
+          eval "$CMD"
 
-          # echo "Executing command: $CMD"
-          # eval "$CMD"
-
-          # echo "Snapshot tagging process completed."
+          echo "Snapshot tagging process completed."
