@@ -89,14 +89,11 @@ jobs:
         run: |
           # Set variables with defaults based on trigger
           REGION="${{ inputs.REGION }}"
-          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
-          MAKE_DEFAULT_VERSION="${{ inputs.MAKE_DEFAULT_VERSION }}"
-
+          
           echo "Region: $REGION"
-          echo "Toolkit Version: $TOOLKIT_VERSION"
           
           # Build the command
-          CMD="./tag_assigned_snapshot.sh --region \"$REGION\" --toolkit-version \"$TOOLKIT_VERSION\""
+          CMD="./tag_assigned_snapshot.sh --region \"$REGION\""
  
           echo "Executing command: $CMD"
           eval "$CMD"
