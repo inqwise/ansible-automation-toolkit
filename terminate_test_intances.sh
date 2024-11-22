@@ -42,19 +42,32 @@ terminate_test_instances() {
   # Add a description tag to the instances
   for instance_id in $instance_ids; do
     echo "Adding description tag to instance $instance_id"
-    aws ec2 create-tags \
-      "${AWS_CLI_OPTS[@]}" \
-      --resources "$instance_id" \
-      --tags Key=Description,Value="Terminated by automated script for test instances" \
-      ${dry_run:+--dry-run}
+    if [ "$dry_run" = true ]; then
+      aws ec2 create-tags \
+        "${AWS_CLI_OPTS[@]}" \
+        --resources "$instance_id" \
+        --tags Key=Description,Value="Terminated by automated script for test instances" \
+        --dry-run
+    else
+      aws ec2 create-tags \
+        "${AWS_CLI_OPTS[@]}" \
+        --resources "$instance_id" \
+        --tags Key=Description,Value="Terminated by automated script for test instances"
+    fi
   done
 
   # Terminate instances
   echo "Terminating instances..."
-  aws ec2 terminate-instances \
-    "${AWS_CLI_OPTS[@]}" \
-    --instance-ids $instance_ids \
-    ${dry_run:+--dry-run}
+  if [ "$dry_run" = true ]; then
+    aws ec2 terminate-instances \
+      "${AWS_CLI_OPTS[@]}" \
+      --instance-ids $instance_ids \
+      --dry-run
+  else
+    aws ec2 terminate-instances \
+      "${AWS_CLI_OPTS[@]}" \
+      --instance-ids $instance_ids
+  fi
 
   echo "Termination initiated for the following instances:"
   echo "$instance_ids"
