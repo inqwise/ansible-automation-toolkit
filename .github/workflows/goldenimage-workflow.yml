@@ -36,6 +36,7 @@ jobs:
       IS_TEST: ${{ github.ref == 'refs/heads/test-workflow' }}
       TAG_NAME: ${{ github.ref_name }}
       REPO_NAME: ${{ github.event.repository.name }}
+      GOLDENIMAGE_RESULT_FILE: goldenimage_result.json
       
     steps:
       - name: Determine Tag
