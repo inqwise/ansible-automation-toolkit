@@ -118,12 +118,12 @@ jobs:
         run: |
           packer build --only=amazon-ebs.${{ inputs.OS }}_${{ inputs.CPU_ARCH }} -var cpu_arch=${{ inputs.CPU_ARCH }} -var 'tag=${{ env.TAG_NAME }}' -var app=${{ inputs.APP }} -var 'aws_region=${{ inputs.REGION }}' -var 'verbose=${{ env.IS_TEST }}' -var 'base_path=${{ inputs.S3_BASE_PATH }}' -var skip_remote_requirements=true goldenimage.pkr.hcl
 
-          if [[ ! -f "$GOLDENIMAGE_RESULT_FILE" ]]; then
-            echo "Error: File $GOLDENIMAGE_RESULT_FILE not found!"
+          if [[ ! -f "${{ env.GOLDENIMAGE_RESULT_FILE }}" ]]; then
+            echo "Error: File ${{ env.GOLDENIMAGE_RESULT_FILE }} not found!"
             exit 1
           fi
 
-          GOLDENIMAGE_RESULT_CONTENT=$(jq '.' "$GOLDENIMAGE_RESULT_FILE")
+          GOLDENIMAGE_RESULT_CONTENT=$(jq '.' "${{ env.GOLDENIMAGE_RESULT_FILE }}")
 
           echo "$GOLDENIMAGE_RESULT_CONTENT"
           
