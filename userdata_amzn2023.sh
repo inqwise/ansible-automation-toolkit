@@ -15,7 +15,7 @@ echo "Get Pip URL: $GET_PIP_URL"
 PLAYBOOK_BASE_URL=$(echo "$PARAMETER" | grep 'playbook_base_url' | awk '{print $2}')
 echo "Playbook Base URL: $PLAYBOOK_BASE_URL"
 
-ACCOUNT_ID=$(aws sts get-caller-identity --query "Account" --output text)
+ACCOUNT_ID=$(echo "$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" | xargs -I {} curl -s -H "X-aws-ec2-metadata-token: {}" http://169.254.169.254/latest/dynamic/instance-identity/document | jq -r '.accountId')")
 echo "Account ID: $ACCOUNT_ID"
 
 PLAYBOOK_NAME=$(eval $METADATA_REQUEST/playbook_name)
