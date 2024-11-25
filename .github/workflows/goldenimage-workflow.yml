@@ -36,7 +36,7 @@ jobs:
       IS_TEST: ${{ github.ref == 'refs/heads/test-workflow' }}
       TAG_NAME: ${{ github.ref_name }}
       REPO_NAME: ${{ github.event.repository.name }}
-      GOLDENIMAGE_RESULT_FILE: "goldenimage_result.json"
+      GOLDENIMAGE_RESULT_FILE: 'goldenimage_result.json'
       
     steps:
       - name: Determine Tag
@@ -115,10 +115,10 @@ jobs:
           packer init .
 
       - name: Execute Packer Build
-        env:
-          GOLDENIMAGE_RESULT_FILE: ${{ env.GOLDENIMAGE_RESULT_FILE }}
         run: |
           packer build --only=amazon-ebs.${{ inputs.OS }}_${{ inputs.CPU_ARCH }} -var cpu_arch=${{ inputs.CPU_ARCH }} -var 'tag=${{ env.TAG_NAME }}' -var app=${{ inputs.APP }} -var 'aws_region=${{ inputs.REGION }}' -var 'verbose=${{ env.IS_TEST }}' -var 'base_path=${{ inputs.S3_BASE_PATH }}' -var skip_remote_requirements=true goldenimage.pkr.hcl
+
+          echo "$GOLDENIMAGE_RESULT_FILE"
 
           if [[ ! -f "$GOLDENIMAGE_RESULT_FILE" ]]; then
             echo "Error: File $GOLDENIMAGE_RESULT_FILE not found!"
