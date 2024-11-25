@@ -61,8 +61,8 @@ version_description=$(echo "$result_object" | jq -r '.version // empty')
 aws_profile=$(echo "$result_object" | jq -r '.profile // empty')
 aws_region=$(echo "$result_object" | jq -r '.region // empty')
 
-# Ensure critical variables are non-empty (excluding new_ami_id)
-if [ -z "$template_name" ] || [ -z "$version_description" ] || [ -z "$aws_profile" ] || [ -z "$aws_region" ]; then
+# Ensure critical variables are non-empty (excluding new_ami_id and aws_profile)
+if [ -z "$template_name" ] || [ -z "$version_description" ] || [ -z "$aws_region" ]; then
     echo "Error: One or more required fields are missing in the result object."
     exit 1
 fi
@@ -71,13 +71,19 @@ fi
 if [ -z "$new_ami_id" ]; then
     echo "AMI ID is missing. Skipping script execution."
 else
+    # Build arguments for the script
+    script_args="-t \"$template_name\" -a \"$new_ami_id\" -d \"$version_description\" -r \"$aws_region\" -m"
+    if [ -n "$aws_profile" ]; then
+        script_args="$script_args -p \"$aws_profile\""
+    fi
+
     # Execute the appropriate script
     if [ -f "$local_script" ]; then
         echo "Local script found, executing $local_script..."
-        bash "$local_script" -t "$template_name" -a "$new_ami_id" -d "$version_description" -p "$aws_profile" -r "$aws_region" -m
+        bash "$local_script" $script_args
     else
         echo "Local script not found, executing remote script from $remote_script_url..."
-        curl -s "$remote_script_url" | bash -s -- -t "$template_name" -a "$new_ami_id" -d "$version_description" -p "$aws_profile" -r "$aws_region" -m
+        curl -s "$remote_script_url" | bash -s -- $script_args
     fi
 
     echo "Script executed with provided arguments."
