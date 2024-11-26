@@ -189,7 +189,7 @@ locals {
           version = var.tag
           profile = var.aws_profile
           region  = var.aws_region
-          run_region = var.aws_run_region
+          run_region = local.aws_run_region
         }
       }
     }
