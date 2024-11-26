@@ -128,6 +128,16 @@ jobs:
           GOLDENIMAGE_RESULT_CONTENT=$(jq '.' "$GOLDENIMAGE_RESULT_FILE")
           echo "$GOLDENIMAGE_RESULT_CONTENT"
           
+          APP=$(jq -r '.app' "$JSON_FILE")
+          VERSION=$(jq -r '.version' "$JSON_FILE")
+          RUN_REGION=$(jq -r '.run_region' "$JSON_FILE")
+          AMI=$(jq -r '.ami' "$JSON_FILE")
+
+          echo "APP=$APP" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "RUN_REGION=$RUN_REGION" >> $GITHUB_ENV
+          echo "AMI=$AMI" >> $GITHUB_ENV
+
       - name: Notify Discord for success
         uses: sarisia/actions-status-discord@v1
         if: success() && vars.WEBHOOK_URL != ''
@@ -136,7 +146,7 @@ jobs:
           webhook: "${{ vars.WEBHOOK_URL }}"
           avatar_url: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
           username: "${{ inputs.APP }} goldenimage workflow"
-          content: "Success"
+          content: "Success on $APP $VERSION"
           description: "Workflow finished successfuly"
-          title: "New AMI was created on ${{ inputs.REGION }}"
+          title: "New AMI was created on $RUN_REGION AMI ID: $AMI"
           color: 5763719
