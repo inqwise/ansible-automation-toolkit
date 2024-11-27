@@ -128,10 +128,10 @@ jobs:
           GOLDENIMAGE_RESULT_CONTENT=$(jq '.' "$GOLDENIMAGE_RESULT_FILE")
           echo "$GOLDENIMAGE_RESULT_CONTENT"
           
-          APP=$(jq -r '.app' "$JSON_FILE")
-          VERSION=$(jq -r '.version' "$JSON_FILE")
-          RUN_REGION=$(jq -r '.run_region' "$JSON_FILE")
-          AMI=$(jq -r '.ami' "$JSON_FILE")
+          APP=$(jq -r '.app' "$GOLDENIMAGE_RESULT_FILE")
+          VERSION=$(jq -r '.version' "$GOLDENIMAGE_RESULT_FILE")
+          RUN_REGION=$(jq -r '.run_region' "$GOLDENIMAGE_RESULT_FILE")
+          AMI=$(jq -r '.ami' "$GOLDENIMAGE_RESULT_FILE")
 
           echo "APP=$APP" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
