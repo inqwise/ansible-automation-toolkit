@@ -114,7 +114,7 @@
       vars:
         telegraf_agent_hostname: "{{ ansible_fqdn }}"
         telegraf_agent_external_interval: True
-      when: telegraf_config_uri is defined
+      when: telegraf_config_uri is defined and not (telegraf_last | default(false))
       tags: 
         - installation
         - configuration
@@ -122,6 +122,18 @@
     - name: Stuff
       ansible.builtin.import_tasks: stuff.yml
     
+    # option to install telegraf after stuff
+    - name: Telegraf
+      ansible.builtin.include_role:
+        name: telegraf
+      vars:
+        telegraf_agent_hostname: "{{ ansible_fqdn }}"
+        telegraf_agent_external_interval: True
+      when: telegraf_config_uri is defined and telegraf_last | default(false)
+      tags: 
+        - installation
+        - configuration
+
     - name: On terminate role
       ansible.builtin.include_role:
         name: on_terminate
