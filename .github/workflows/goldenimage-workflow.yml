@@ -146,7 +146,7 @@ jobs:
           webhook: "${{ vars.WEBHOOK_URL }}"
           avatar_url: "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png"
           username: "${{ inputs.APP }} goldenimage workflow"
-          content: "Success on $APP $VERSION"
+          content: "Success on ${{ env.APP }} ${{ env.VERSION }}"
           description: "Workflow finished successfuly"
-          title: "New AMI was created on $RUN_REGION AMI ID: $AMI"
+          title: "New AMI was created on ${{ env.RUN_REGION }} AMI ID: ${{ env.AMI }}"
           color: 5763719
