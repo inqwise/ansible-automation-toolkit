@@ -12,8 +12,12 @@ echo "account_id:$ACCOUNT_ID"
 METADATA_REQUEST='TOKEN=$(curl -s -X PUT "http://169.254.169.254/latest/api/token" -H "X-aws-ec2-metadata-token-ttl-seconds: 21600") && curl -s -H "X-aws-ec2-metadata-token: $TOKEN" http://169.254.169.254/latest/meta-data/tags/instance'
 
 PLAYBOOK_NAME=$(eval $METADATA_REQUEST/playbook_name)
-if [[ -z "$PLAYBOOK_NAME" ]]; then
+if [[ -z "$PLAYBOOK_NAME" || "$PLAYBOOK_NAME" == "<?xml"* ]]; then
     PLAYBOOK_NAME=$(eval $METADATA_REQUEST/Name)
+fi
+
+if [[ -z "$PLAYBOOK_NAME" || "$PLAYBOOK_NAME" == "<?xml"* ]]; then
+    PLAYBOOK_NAME="undefined playbook"
 fi
 echo "playbook_name:$PLAYBOOK_NAME"
 
