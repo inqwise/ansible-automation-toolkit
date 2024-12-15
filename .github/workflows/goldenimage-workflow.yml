@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   Golden-Image:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     continue-on-error: false
     env:
       IS_TEST: ${{ github.ref == 'refs/heads/test-workflow' }}
@@ -55,11 +55,30 @@ jobs:
         with:
           role-to-assume: ${{ inputs.ROLE }}
           aws-region: ${{ inputs.REGION }}
-
-      - name: Install Packages
+          
+      - name: Get Ubuntu Version
+        id: ubuntu_version
         run: |
+          VERSION_ID=$(grep '^VERSION_ID=' /etc/os-release | cut -d'=' -f2 | tr -d '"')
+          echo "VERSION_ID=$VERSION_ID"
+          echo "::set-output name=version::$VERSION_ID"
+  
+      - name: Install Packages (Ubuntu version is 22.04 or less)
+        if: ${{ steps.ubuntu_version.outputs.version == '22.04' || steps.ubuntu_version.outputs.version < '22.04' }}
+        run: |
+          echo "Ubuntu version is 22.04 or less. Installing awscli and packer."
           sudo apt-get update
-          sudo apt-get install -y awscli packer    
+          sudo apt-get install -y awscli packer
+  
+      - name: Install Packages (Ubuntu version greater than 22.04)
+        if: ${{ steps.ubuntu_version.outputs.version > '22.04' }}
+        run: |
+          echo "Ubuntu version is greater than 22.04. Installing aws-cli and packer."
+          sudo apt-get update
+          sudo snap install aws-cli --classic
+          wget -O - https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+          sudo apt update && sudo apt install packer
 
       - uses: actions/setup-python@v5
         with:
