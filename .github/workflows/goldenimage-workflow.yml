@@ -30,7 +30,11 @@ permissions:
 
 jobs:
   Golden-Image:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04, ubuntu-24.04]
+      fail-fast: false
     continue-on-error: false
     env:
       IS_TEST: ${{ github.ref == 'refs/heads/test-workflow' }}
