@@ -36,7 +36,7 @@ jobs:
       - name: Download cleanup_test_dns_records Script
         run: |
           TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
-          echo "Downloading cleanup_all_templates.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          echo "Downloading cleanup_test_dns_records.sh script from toolkit version '$TOOLKIT_VERSION'..."
           wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/cleanup_test_dns_records.sh -O cleanup_test_dns_records.sh
           chmod +x cleanup_test_dns_records.sh
           echo "cleanup_test_dns_records.sh downloaded and made executable."
@@ -78,6 +78,31 @@ jobs:
           echo "Running cleanup_test_volumes.sh with arguments: $SCRIPT_ARGS"
           ./cleanup_test_volumes.sh $SCRIPT_ARGS
 
+      - name: Download cleanup_test_amis Script
+        run: |
+          TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
+          echo "Downloading cleanup_test_amis.sh script from toolkit version '$TOOLKIT_VERSION'..."
+          wget https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/${TOOLKIT_VERSION}/ami/cleanup_test_amis.sh -O cleanup_test_amis.sh
+          chmod +x cleanup_test_amis.sh
+          echo "cleanup_test_amis.sh downloaded and made executable."
+
+      - name: Execute cleanup_test_amis Script
+        run: |
+          SCRIPT_ARGS=""
+          
+          # Append region
+          if [ -n "${{ inputs.REGION }}" ]; then
+            SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
+          fi
+
+          # Append dry-run if enabled
+          if [ "${{ inputs.DRY_RUN }}" = true ]; then
+            SCRIPT_ARGS+="--dry-run "
+          fi
+
+          echo "Running cleanup_test_amis.sh with arguments: $SCRIPT_ARGS"
+          ./cleanup_test_amis.sh $SCRIPT_ARGS
+
       - name: Download terminate_test_intances Script
         run: |
           TOOLKIT_VERSION="${{ inputs.TOOLKIT_VERSION }}"
@@ -105,4 +130,3 @@ jobs:
   
       - name: Confirm Completion
         run: echo "Terminate test recources workflow completed successfully."
-        
