@@ -5,15 +5,15 @@ set -eu
 # Usage information
 usage() {
   cat <<EOF
-Usage: $0 --profile <aws_profile> [--region <aws_region>] [--keep-history <num>] [--dry-run]
-       $0 -p <aws_profile> [-r <aws_region>] [-k <num>] [-d]
+Usage: $0 --region <aws_region> [--profile <aws_profile>] [--keep-history <num>] [--dry-run] [--clean-scope <scope>]
 
 Options:
-  -p, --profile               Specify the AWS profile (optional)
-  -r, --region                Specify the AWS region
-  -k, --keep-history          Specify the number of versions to keep (default: 3)
-  -d, --dry-run               Enable dry-run mode (simulate actions without making changes)
-  -h, --help                  Display this help message and exit
+  --region                Specify the AWS region (mandatory)
+  --profile               Specify the AWS profile (optional)
+  --keep-history          Specify the number of versions to keep (default: 3)
+  --dry-run               Enable dry-run mode (simulate actions without making changes)
+  --clean-scope           Define clean scope ('all' or 'none', default: 'all')
+  --help                  Display this help message and exit
 EOF
   exit 1
 }
@@ -22,6 +22,7 @@ EOF
 aws_region=""
 keep_history=3
 dry_run=false
+clean_scope="all"
 
 # Remote script URLs
 remote_clean_template_script="https://raw.githubusercontent.com/inqwise/ansible-automation-toolkit/default/cleanup_template.sh"
@@ -64,47 +65,49 @@ download_script() {
   fi
 }
 
-# Function to parse command-line arguments using getopt
+# Function to parse command-line arguments (long options only)
 parse_args() {
-  # Use getopt to parse both short and long options
-  PARSED_OPTIONS=$(getopt -n "$0" -o p:r:k:dh --long profile:,region:,keep-history:,dry-run,help -- "$@")
-  if [ $? -ne 0 ]; then
-    usage
-  fi
-
-  eval set -- "$PARSED_OPTIONS"
-
-  while true; do
+  while [[ $# -gt 0 ]]; do
     case "$1" in
-      -p|--profile)
-        aws_profile="$2"
-        shift 2
-        ;;
-      -r|--region)
+      --region)
         aws_region="$2"
         shift 2
         ;;
-      -k|--keep-history)
+      --profile)
+        aws_profile="$2"
+        shift 2
+        ;;
+      --keep-history)
         keep_history="$2"
         shift 2
         ;;
-      -d|--dry-run)
+      --dry-run)
         dry_run=true
         shift
         ;;
-      -h|--help)
+      --clean-scope)
+        clean_scope="$2"
+        if [[ ! "$clean_scope" =~ ^(all|none)$ ]]; then
+          log "ERROR" "--clean-scope must be 'all' or 'none'."
+          exit 1
+        fi
+        shift 2
+        ;;
+      --help)
         usage
         ;;
-      --)
-        shift
-        break
-        ;;
       *)
-        echo "Unknown option: $1"
+        log "ERROR" "Unknown option: $1"
         usage
         ;;
     esac
   done
+
+  # Since region is mandatory, check if it's provided
+  if [ -z "$aws_region" ]; then
+    log "ERROR" "Mandatory argument --region is missing."
+    usage
+  fi
 
   # Export aws_profile to use it outside the function if it's set
   if [ -n "${aws_profile:-}" ]; then
@@ -114,9 +117,6 @@ parse_args() {
 
 # Parse command-line arguments
 parse_args "$@"
-
-# Check for required arguments (if any)
-# Since profile is optional, no need to check for its presence
 
 # Validate --keep-history is a positive integer
 if ! [[ "$keep_history" =~ ^[1-9][0-9]*$ ]]; then
@@ -182,27 +182,37 @@ build_cleanup_amis_args() {
   echo "${args[@]}"
 }
 
-# Function to check if a template has the tag 'amm:SkipClean' set to 'true'
-should_skip_template() {
+# Function to determine if a template should be processed based on the clean scope
+should_process_template() {
   local template_name="$1"
-  # Fetch tags for the specific launch template
-  tags=$(aws ec2 describe-launch-templates --launch-template-names "$template_name" \
-    --query "LaunchTemplates[].Tags[?Key=='amm:SkipClean'].Value[]" --output text $(build_aws_args))
-  
-  # Check if the tag value is 'true' (case-insensitive)
-  if [[ "$tags" =~ ^[Tt][Rr][Uu][Ee]$ ]]; then
-    return 0  # Should skip
-  else
-    return 1  # Should not skip
-  fi
+
+  case "$clean_scope" in
+    all)
+      # In 'all' scope, process all except those with amm:SkipClean=true
+      tags=$(aws ec2 describe-launch-templates --launch-template-names "$template_name" \
+        --query "LaunchTemplates[].Tags[?Key=='amm:SkipClean'].Value[]" --output text $(build_aws_args) || true)
+      if [[ "$tags" =~ ^[Tt][Rr][Uu][Ee]$ ]]; then
+        return 1 # skip this template
+      else
+        return 0 # process this template
+      fi
+      ;;
+    none)
+      # In 'none' scope, process only those with amm:Clean=true
+      tags=$(aws ec2 describe-launch-templates --launch-template-names "$template_name" \
+        --query "LaunchTemplates[].Tags[?Key=='amm:Clean'].Value[]" --output text $(build_aws_args) || true)
+      if [[ "$tags" =~ ^[Tt][Rr][Uu][Ee]$ ]]; then
+        return 0 # process this template
+      else
+        return 1 # skip this template
+      fi
+      ;;
+  esac
 }
 
-# Find all launch templates
 log "INFO" "Fetching launch templates from AWS..."
-# Build AWS CLI arguments
 aws_args=$(build_aws_args)
-templates=$(aws ec2 describe-launch-templates --query "LaunchTemplates[].LaunchTemplateName" --output text $aws_args)
-# Check if any templates are found
+templates=$(aws ec2 describe-launch-templates --query "LaunchTemplates[].LaunchTemplateName" --output text $aws_args || true)
 if [ -z "$templates" ]; then
   log "INFO" "No launch templates found."
   exit 0
@@ -210,17 +220,14 @@ else
   log "INFO" "Found launch templates: $templates"
 fi
 
-# Initialize an empty list to keep track of affected templates
 affected_templates=()
 
-# Iterate through each found template and clean it
 for template_name in $templates; do
   log "INFO" "Starting cleanup for template: $template_name"
 
-  # Check if the template has the 'amm:SkipClean' tag set to 'true'
-  if should_skip_template "$template_name"; then
-    log "INFO" "Template '$template_name' has tag 'amm:SkipClean=true'. Skipping cleanup."
-    continue  # Skip to the next template
+  if ! should_process_template "$template_name"; then
+    log "INFO" "Template '$template_name' does not meet criteria for clean-scope='$clean_scope'. Skipping."
+    continue
   fi
 
   if [ "$dry_run" = true ]; then
@@ -244,12 +251,10 @@ for template_name in $templates; do
 
   # Prepare and execute the AMI cleanup command
   if [ "$dry_run" = true ]; then
-    # Execute AMI cleanup script in dry-run mode
     log "INFO" "Executing local AMI cleanup for template: $template_name with --dry-run"
     "$local_amis_cleanup_script" $(build_cleanup_amis_args "$template_name")
     log "INFO" "Dry-run: Simulated AMI cleanup for template: $template_name"
   else
-    # Execute AMI cleanup script normally
     log "INFO" "Executing local AMI cleanup for template: $template_name"
     "$local_amis_cleanup_script" $(build_cleanup_amis_args "$template_name")
 
@@ -271,5 +276,4 @@ else
   log "INFO" "No templates were affected."
 fi
 
-# Exit successfully
 exit 0

@@ -22,6 +22,10 @@ on:
         description: 'Enable dry-run mode'
         required: true
         type: boolean
+      CLEAN_SCOPE:
+        description: 'Define clean scope (all/none). Optional.'
+        required: false
+        type: string
 
 jobs:
   cleanup_templates:
@@ -49,7 +53,7 @@ jobs:
         run: |
           SCRIPT_ARGS=""
           
-          # Append region
+          # Append region (mandatory)
           if [ -n "${{ inputs.REGION }}" ]; then
             SCRIPT_ARGS+="--region ${{ inputs.REGION }} "
           fi
@@ -61,10 +65,14 @@ jobs:
           if [ "${{ inputs.DRY_RUN }}" = true ]; then
             SCRIPT_ARGS+="--dry-run "
           fi
+
+          # Append clean-scope if provided
+          if [ -n "${{ inputs.CLEAN_SCOPE }}" ]; then
+            SCRIPT_ARGS+="--clean-scope ${{ inputs.CLEAN_SCOPE }} "
+          fi
           
           echo "Running cleanup_all_templates.sh with arguments: $SCRIPT_ARGS"
           ./cleanup_all_templates.sh $SCRIPT_ARGS
 
       - name: Confirm Completion
         run: echo "Cleanup templates workflow completed successfully."
-        
