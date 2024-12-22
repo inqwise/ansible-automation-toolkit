@@ -462,15 +462,3 @@ For any issues, questions, or contributions related to these scripts, please fol
 ```
 
 ---
-
-**Instructions to Create the Markdown File:**
-
-1. **Copy the Content**: Select all the text within the code block above.
-
-2. **Create a New File**: Open your preferred text editor or IDE and create a new file named `AWS_AMI_Management_Scripts.md`.
-
-3. **Paste the Content**: Paste the copied content into the newly created file.
-
-4. **Save the File**: Save the file in your desired directory.
-
-5. **View the Documentation**: You can view the Markdown file using any Markdown viewer or directly on platforms like GitHub, GitLab, or Bitbucket that support Markdown rendering.

@@ -395,5 +395,3 @@ After the build completes, `goldenimage-postprocess.sh` will automatically proce
 - **Network Security**: Configure security groups and network ACLs to limit access to deployed instances.
 
 ---
-
-*© 2024 Your Company Name. All rights reserved.*
