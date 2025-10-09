@@ -3,6 +3,8 @@
 # See the pip requirements file documentation for details:
 # https://pip.pypa.io/en/stable/user_guide/#requirements-files
 
-ansible>=2.10
+ansible>=7.0.0
 botocore
 boto3
+ansible-core>=2.12.0b1 # not directly required, pinned by Snyk to avoid a vulnerability
+urllib3>=2.5.0 # not directly required, pinned by Snyk to avoid a vulnerability
