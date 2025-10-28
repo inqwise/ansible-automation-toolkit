@@ -48,7 +48,7 @@ jobs:
           echo "S3_PATH=${{ inputs.S3_BASE_PATH }}/ansible-${{ inputs.APP }}/${{ env.TAG_NAME }}" >> $GITHUB_ENV
 
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
